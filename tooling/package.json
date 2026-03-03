@@ -1,0 +1,22 @@
+{
+  "name": "@social-posts-helper/tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'tooling: no lint target'",
+    "build": "echo 'tooling: no build target'",
+    "test": "echo 'tooling: no test target'"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "globals": "^16.0.0",
+    "typescript-eslint": "^8.0.0",
+    "prettier": "^3.4.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  }
+}
