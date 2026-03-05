@@ -16,7 +16,8 @@ import {
   FormControlLabel,
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
-import type { TextLayerData, TextStyle } from '@social-posts-helper/core';
+import { useTranslation } from 'react-i18next';
+import type { TextLayerData, TextStyle } from '@mint/core';
 
 interface StylePanelProps {
   layer: TextLayerData;
@@ -24,6 +25,7 @@ interface StylePanelProps {
 }
 
 export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
+  const { t } = useTranslation();
   const updateStyle = useCallback(
     (styleChanges: Partial<TextStyle>) => {
       onUpdate({ style: { ...layer.style, ...styleChanges } });
@@ -34,7 +36,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
   return (
     <Box sx={{ p: 1 }}>
       <TextField
-        label="Text"
+        label={t('style.text')}
         value={layer.text}
         onChange={(e) => onUpdate({ text: e.target.value })}
         multiline
@@ -46,10 +48,10 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
       <Stack spacing={2}>
         <FormControl size="small" fullWidth>
-          <InputLabel>Font</InputLabel>
+          <InputLabel>{t('style.font')}</InputLabel>
           <Select
             value={layer.style.fontFamily}
-            label="Font"
+            label={t('style.font')}
             onChange={(e) =>
               updateStyle({ fontFamily: e.target.value as string })
             }
@@ -65,7 +67,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
         <Box>
           <Typography variant="caption">
-            Font Size: {layer.style.fontSize}
+            {t('style.fontSize', { size: layer.style.fontSize })}
           </Typography>
           <Slider
             value={layer.style.fontSize}
@@ -77,24 +79,24 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
         </Box>
 
         <FormControl size="small" fullWidth>
-          <InputLabel>Weight</InputLabel>
+          <InputLabel>{t('style.weight')}</InputLabel>
           <Select
             value={layer.style.fontWeight}
-            label="Weight"
+            label={t('style.weight')}
             onChange={(e) =>
               updateStyle({ fontWeight: e.target.value as number })
             }
           >
-            <MenuItem value={300}>Light</MenuItem>
-            <MenuItem value={400}>Regular</MenuItem>
-            <MenuItem value={600}>Semi Bold</MenuItem>
-            <MenuItem value={700}>Bold</MenuItem>
-            <MenuItem value={900}>Black</MenuItem>
+            <MenuItem value={300}>{t('style.weightLight')}</MenuItem>
+            <MenuItem value={400}>{t('style.weightRegular')}</MenuItem>
+            <MenuItem value={600}>{t('style.weightSemiBold')}</MenuItem>
+            <MenuItem value={700}>{t('style.weightBold')}</MenuItem>
+            <MenuItem value={900}>{t('style.weightBlack')}</MenuItem>
           </Select>
         </FormControl>
 
         <Box>
-          <Typography variant="caption">Color</Typography>
+          <Typography variant="caption">{t('style.color')}</Typography>
           <input
             type="color"
             value={layer.style.color}
@@ -110,7 +112,9 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
         <Box>
           <Typography variant="caption">
-            Opacity: {Math.round(layer.style.opacity * 100)}%
+            {t('style.opacity', {
+              value: Math.round(layer.style.opacity * 100),
+            })}
           </Typography>
           <Slider
             value={layer.style.opacity}
@@ -123,25 +127,27 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
         </Box>
 
         <FormControl size="small" fullWidth>
-          <InputLabel>Align</InputLabel>
+          <InputLabel>{t('style.align')}</InputLabel>
           <Select
             value={layer.style.textAlign}
-            label="Align"
+            label={t('style.align')}
             onChange={(e) =>
               updateStyle({
                 textAlign: e.target.value as 'left' | 'center' | 'right',
               })
             }
           >
-            <MenuItem value="left">Left</MenuItem>
-            <MenuItem value="center">Center</MenuItem>
-            <MenuItem value="right">Right</MenuItem>
+            <MenuItem value="left">{t('style.alignLeft')}</MenuItem>
+            <MenuItem value="center">{t('style.alignCenter')}</MenuItem>
+            <MenuItem value="right">{t('style.alignRight')}</MenuItem>
           </Select>
         </FormControl>
 
         <Box>
           <Typography variant="caption">
-            Line Height: {layer.style.lineHeight.toFixed(1)}
+            {t('style.lineHeight', {
+              value: layer.style.lineHeight.toFixed(1),
+            })}
           </Typography>
           <Slider
             value={layer.style.lineHeight}
@@ -155,7 +161,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
         <Box>
           <Typography variant="caption">
-            Letter Spacing: {layer.style.letterSpacing}
+            {t('style.letterSpacing', { value: layer.style.letterSpacing })}
           </Typography>
           <Slider
             value={layer.style.letterSpacing}
@@ -169,7 +175,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
         <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="body2">Shadow</Typography>
+            <Typography variant="body2">{t('style.shadow')}</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <FormControlLabel
@@ -193,13 +199,13 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                   size="small"
                 />
               }
-              label="Enable"
+              label={t('style.enable')}
             />
             {layer.style.shadow && (
               <Stack spacing={1} sx={{ mt: 1 }}>
                 <Box>
                   <Typography variant="caption">
-                    X: {layer.style.shadow.offsetX}
+                    {t('style.shadowX', { value: layer.style.shadow.offsetX })}
                   </Typography>
                   <Slider
                     value={layer.style.shadow.offsetX}
@@ -218,7 +224,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                 </Box>
                 <Box>
                   <Typography variant="caption">
-                    Y: {layer.style.shadow.offsetY}
+                    {t('style.shadowY', { value: layer.style.shadow.offsetY })}
                   </Typography>
                   <Slider
                     value={layer.style.shadow.offsetY}
@@ -237,7 +243,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                 </Box>
                 <Box>
                   <Typography variant="caption">
-                    Blur: {layer.style.shadow.blur}
+                    {t('style.shadowBlur', { value: layer.style.shadow.blur })}
                   </Typography>
                   <Slider
                     value={layer.style.shadow.blur}
@@ -255,7 +261,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                   />
                 </Box>
                 <Box>
-                  <Typography variant="caption">Color</Typography>
+                  <Typography variant="caption">{t('style.color')}</Typography>
                   <input
                     type="color"
                     value={layer.style.shadow.color}
@@ -282,7 +288,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
 
         <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="body2">Stroke</Typography>
+            <Typography variant="body2">{t('style.stroke')}</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <FormControlLabel
@@ -301,13 +307,15 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                   size="small"
                 />
               }
-              label="Enable"
+              label={t('style.enable')}
             />
             {layer.style.stroke && (
               <Stack spacing={1} sx={{ mt: 1 }}>
                 <Box>
                   <Typography variant="caption">
-                    Width: {layer.style.stroke.width}
+                    {t('style.strokeWidth', {
+                      value: layer.style.stroke.width,
+                    })}
                   </Typography>
                   <Slider
                     value={layer.style.stroke.width}
@@ -326,7 +334,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
                   />
                 </Box>
                 <Box>
-                  <Typography variant="caption">Color</Typography>
+                  <Typography variant="caption">{t('style.color')}</Typography>
                   <input
                     type="color"
                     value={layer.style.stroke.color}

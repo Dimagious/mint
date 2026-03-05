@@ -1,4 +1,4 @@
-import type { EditorDocument, BackgroundData } from '@social-posts-helper/core';
+import type { EditorDocument, BackgroundData } from '@mint/core';
 import type { Command } from './command';
 
 export class SetBackgroundCommand implements Command {

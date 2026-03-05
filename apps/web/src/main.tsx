@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { theme } from '@social-posts-helper/ui';
+import { theme } from '@mint/ui';
+import './i18n';
 import { App } from './App';
 
 const root = document.getElementById('root');

@@ -1,10 +1,6 @@
 import * as fabric from 'fabric';
-import type {
-  EditorDocument,
-  TextLayerData,
-  CanvasPreset,
-} from '@social-posts-helper/core';
-import { getPresetById } from '@social-posts-helper/core';
+import type { EditorDocument, TextLayerData, CanvasPreset } from '@mint/core';
+import { getPresetById } from '@mint/core';
 
 type SelectionCallback = (layerId: string | null) => void;
 type ModifiedCallback = (

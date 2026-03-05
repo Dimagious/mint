@@ -1,15 +1,36 @@
 import React, { useState, useCallback } from 'react';
-import { Box, AppBar, Toolbar, Typography, Button, Stack } from '@mui/material';
-import { Undo, Redo, TextFields, Download } from '@mui/icons-material';
-import { useEditorStore } from '@social-posts-helper/editor';
-import type { ExportOptions } from '@social-posts-helper/core';
-import { ExportDialog } from '@social-posts-helper/ui';
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Stack,
+  IconButton,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
+} from '@mui/material';
+import {
+  Undo,
+  Redo,
+  TextFields,
+  Download,
+  LocalCafe,
+} from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+import { useEditorStore } from '@mint/editor';
+import type { ExportOptions } from '@mint/core';
+import { ExportDialog } from '@mint/ui';
 import { CanvasPanel } from './components/CanvasPanel';
 import { LayersPanel } from './components/LayersPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ToolbarSection } from './components/ToolbarSection';
 
+const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/mint';
+
 export const App: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [exportOpen, setExportOpen] = useState(false);
   const canUndo = useEditorStore((s) => s.canUndo);
   const canRedo = useEditorStore((s) => s.canRedo);
@@ -28,24 +49,37 @@ export const App: React.FC = () => {
     [canvasPanelRef],
   );
 
+  const handleLanguageChange = (
+    _: React.MouseEvent,
+    newLang: string | null,
+  ) => {
+    if (newLang) {
+      i18n.changeLanguage(newLang);
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar variant="dense">
           <Typography variant="h6" sx={{ mr: 3, color: 'primary.main' }}>
-            CaptionForge
+            MINT
           </Typography>
 
           <ToolbarSection />
 
-          <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ ml: 'auto', alignItems: 'center' }}
+          >
             <Button
               size="small"
               startIcon={<Undo />}
               onClick={undo}
               disabled={!canUndo}
             >
-              Undo
+              {t('toolbar.undo')}
             </Button>
             <Button
               size="small"
@@ -53,7 +87,7 @@ export const App: React.FC = () => {
               onClick={redo}
               disabled={!canRedo}
             >
-              Redo
+              {t('toolbar.redo')}
             </Button>
             <Button
               size="small"
@@ -61,7 +95,7 @@ export const App: React.FC = () => {
               startIcon={<TextFields />}
               onClick={() => addTextLayer()}
             >
-              Add Text
+              {t('toolbar.addText')}
             </Button>
             <Button
               size="small"
@@ -69,8 +103,40 @@ export const App: React.FC = () => {
               startIcon={<Download />}
               onClick={() => setExportOpen(true)}
             >
-              Export
+              {t('toolbar.export')}
             </Button>
+            <Tooltip title={t('toolbar.donate')}>
+              <IconButton
+                size="small"
+                component="a"
+                href={BUYMEACOFFEE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: 'text.secondary' }}
+              >
+                <LocalCafe fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <ToggleButtonGroup
+              value={i18n.language.startsWith('ru') ? 'ru' : 'en'}
+              exclusive
+              onChange={handleLanguageChange}
+              size="small"
+              sx={{ height: 30 }}
+            >
+              <ToggleButton
+                value="en"
+                sx={{ px: 1, py: 0, fontSize: '0.75rem' }}
+              >
+                EN
+              </ToggleButton>
+              <ToggleButton
+                value="ru"
+                sx={{ px: 1, py: 0, fontSize: '0.75rem' }}
+              >
+                RU
+              </ToggleButton>
+            </ToggleButtonGroup>
           </Stack>
         </Toolbar>
       </AppBar>

@@ -1,12 +1,14 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
-import { useEditorStore } from '@social-posts-helper/editor';
-import { StylePanel } from '@social-posts-helper/ui';
-import type { TextLayerData } from '@social-posts-helper/core';
+import { useTranslation } from 'react-i18next';
+import { useEditorStore } from '@mint/editor';
+import { StylePanel } from '@mint/ui';
+import type { TextLayerData } from '@mint/core';
 
 const PANEL_WIDTH = 300;
 
 export const PropertiesPanel: React.FC = () => {
+  const { t } = useTranslation();
   const doc = useEditorStore((s) => s.document);
   const selectedLayerId = useEditorStore((s) => s.selectedLayerId);
   const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
@@ -28,7 +30,7 @@ export const PropertiesPanel: React.FC = () => {
       elevation={0}
     >
       <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle2">Properties</Typography>
+        <Typography variant="subtitle2">{t('properties.title')}</Typography>
       </Box>
 
       {selectedLayer ? (
@@ -49,7 +51,7 @@ export const PropertiesPanel: React.FC = () => {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            Select a layer to edit properties
+            {t('properties.selectLayer')}
           </Typography>
         </Box>
       )}

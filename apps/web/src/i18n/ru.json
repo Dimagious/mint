@@ -1,0 +1,60 @@
+{
+  "toolbar": {
+    "undo": "Отменить",
+    "redo": "Повторить",
+    "addText": "Добавить текст",
+    "export": "Экспорт",
+    "canvasSize": "Размер холста",
+    "donate": "Угостить кофе"
+  },
+  "layers": {
+    "background": "Фон",
+    "uploadImage": "Загрузить изображение",
+    "fit": "Режим: {{fit}}",
+    "title": "Слои",
+    "add": "Добавить",
+    "emptyText": "Пустой текст"
+  },
+  "properties": {
+    "title": "Свойства",
+    "selectLayer": "Выберите слой для редактирования"
+  },
+  "style": {
+    "text": "Текст",
+    "font": "Шрифт",
+    "fontSize": "Размер шрифта: {{size}}",
+    "weight": "Насыщенность",
+    "weightLight": "Тонкий",
+    "weightRegular": "Обычный",
+    "weightSemiBold": "Полужирный",
+    "weightBold": "Жирный",
+    "weightBlack": "Сверхжирный",
+    "color": "Цвет",
+    "opacity": "Прозрачность: {{value}}%",
+    "align": "Выравнивание",
+    "alignLeft": "По левому краю",
+    "alignCenter": "По центру",
+    "alignRight": "По правому краю",
+    "lineHeight": "Межстрочный интервал: {{value}}",
+    "letterSpacing": "Межбуквенный интервал: {{value}}",
+    "shadow": "Тень",
+    "stroke": "Обводка",
+    "enable": "Включить",
+    "shadowX": "X: {{value}}",
+    "shadowY": "Y: {{value}}",
+    "shadowBlur": "Размытие: {{value}}",
+    "strokeWidth": "Толщина: {{value}}"
+  },
+  "export": {
+    "title": "Экспорт изображения",
+    "format": "Формат",
+    "quality": "Качество: {{value}}%",
+    "cancel": "Отмена",
+    "export": "Экспорт"
+  },
+  "presets": {
+    "square": "Квадрат",
+    "portrait": "Портрет",
+    "story": "Сторис"
+  }
+}

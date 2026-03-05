@@ -1,5 +1,5 @@
 {
-  "name": "@social-posts-helper/core",
+  "name": "@mint/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

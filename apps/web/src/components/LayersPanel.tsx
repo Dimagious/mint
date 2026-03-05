@@ -1,13 +1,15 @@
 import React, { useCallback } from 'react';
 import { Box, Typography, List, Button, Paper } from '@mui/material';
 import { Add, Image } from '@mui/icons-material';
-import { useEditorStore } from '@social-posts-helper/editor';
-import { LayerListItem } from '@social-posts-helper/ui';
-import { readFileAsDataUrl } from '@social-posts-helper/utils';
+import { useTranslation } from 'react-i18next';
+import { useEditorStore } from '@mint/editor';
+import { LayerListItem } from '@mint/ui';
+import { readFileAsDataUrl } from '@mint/utils';
 
 const PANEL_WIDTH = 260;
 
 export const LayersPanel: React.FC = () => {
+  const { t } = useTranslation();
   const doc = useEditorStore((s) => s.document);
   const selectedLayerId = useEditorStore((s) => s.selectedLayerId);
   const selectLayer = useEditorStore((s) => s.selectLayer);
@@ -45,7 +47,7 @@ export const LayersPanel: React.FC = () => {
     >
       <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Background
+          {t('layers.background')}
         </Typography>
         <Button
           component="label"
@@ -54,7 +56,7 @@ export const LayersPanel: React.FC = () => {
           startIcon={<Image />}
           fullWidth
         >
-          Upload Image
+          {t('layers.uploadImage')}
           <input
             type="file"
             hidden
@@ -75,7 +77,7 @@ export const LayersPanel: React.FC = () => {
               })
             }
           >
-            Fit: {doc.background.fit}
+            {t('layers.fit', { fit: doc.background.fit })}
           </Button>
         )}
       </Box>
@@ -90,9 +92,9 @@ export const LayersPanel: React.FC = () => {
           borderColor: 'divider',
         }}
       >
-        <Typography variant="subtitle2">Layers</Typography>
+        <Typography variant="subtitle2">{t('layers.title')}</Typography>
         <Button size="small" startIcon={<Add />} onClick={() => addTextLayer()}>
-          Add
+          {t('layers.add')}
         </Button>
       </Box>
 
@@ -116,6 +118,7 @@ export const LayersPanel: React.FC = () => {
               onMoveDown={() => reorderLayer(layer.id, 'down')}
               isFirst={actualIndex === 0}
               isLast={actualIndex === doc.layers.length - 1}
+              emptyText={t('layers.emptyText')}
             />
           );
         })}

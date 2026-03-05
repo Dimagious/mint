@@ -1,5 +1,5 @@
-import type { EditorDocument } from '@social-posts-helper/core';
-import type { CanvasPresetId } from '@social-posts-helper/core';
+import type { EditorDocument } from '@mint/core';
+import type { CanvasPresetId } from '@mint/core';
 import type { Command } from './command';
 
 export class ChangePresetCommand implements Command {

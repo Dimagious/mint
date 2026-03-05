@@ -5,13 +5,13 @@ import type {
   CanvasPresetId,
   BackgroundData,
   ExportOptions,
-} from '@social-posts-helper/core';
+} from '@mint/core';
 import {
   createDefaultDocument,
   createTextLayer,
   getPresetById,
   generateExportFilename,
-} from '@social-posts-helper/core';
+} from '@mint/core';
 import { CommandHistory } from '../commands/command-history';
 import { AddTextLayerCommand } from '../commands/add-text-layer-command';
 import { RemoveTextLayerCommand } from '../commands/remove-text-layer-command';

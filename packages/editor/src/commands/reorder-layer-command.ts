@@ -1,4 +1,4 @@
-import type { EditorDocument } from '@social-posts-helper/core';
+import type { EditorDocument } from '@mint/core';
 import type { Command } from './command';
 
 export class ReorderLayerCommand implements Command {

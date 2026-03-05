@@ -1,4 +1,4 @@
-import type { EditorDocument, TextLayerData } from '@social-posts-helper/core';
+import type { EditorDocument, TextLayerData } from '@mint/core';
 import type { Command } from './command';
 
 export class UpdateTextLayerCommand implements Command {

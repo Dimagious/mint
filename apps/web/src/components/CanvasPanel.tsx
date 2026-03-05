@@ -6,12 +6,9 @@ import {
   forwardRef,
 } from 'react';
 import { Box } from '@mui/material';
-import { FabricAdapter, useEditorStore } from '@social-posts-helper/editor';
-import type { ExportOptions, TextLayerData } from '@social-posts-helper/core';
-import {
-  getPresetById,
-  generateExportFilename,
-} from '@social-posts-helper/core';
+import { FabricAdapter, useEditorStore } from '@mint/editor';
+import type { ExportOptions, TextLayerData } from '@mint/core';
+import { getPresetById, generateExportFilename } from '@mint/core';
 
 export interface CanvasPanelHandle {
   handleExport: (options: ExportOptions) => void;

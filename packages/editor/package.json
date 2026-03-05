@@ -1,5 +1,5 @@
 {
-  "name": "@social-posts-helper/editor",
+  "name": "@mint/editor",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@social-posts-helper/core": "workspace:*",
+    "@mint/core": "workspace:*",
     "fabric": "^6.5.0",
     "zustand": "^5.0.0"
   },

@@ -1,0 +1,60 @@
+{
+  "toolbar": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "addText": "Add Text",
+    "export": "Export",
+    "canvasSize": "Canvas Size",
+    "donate": "Buy me a coffee"
+  },
+  "layers": {
+    "background": "Background",
+    "uploadImage": "Upload Image",
+    "fit": "Fit: {{fit}}",
+    "title": "Layers",
+    "add": "Add",
+    "emptyText": "Empty text"
+  },
+  "properties": {
+    "title": "Properties",
+    "selectLayer": "Select a layer to edit properties"
+  },
+  "style": {
+    "text": "Text",
+    "font": "Font",
+    "fontSize": "Font Size: {{size}}",
+    "weight": "Weight",
+    "weightLight": "Light",
+    "weightRegular": "Regular",
+    "weightSemiBold": "Semi Bold",
+    "weightBold": "Bold",
+    "weightBlack": "Black",
+    "color": "Color",
+    "opacity": "Opacity: {{value}}%",
+    "align": "Align",
+    "alignLeft": "Left",
+    "alignCenter": "Center",
+    "alignRight": "Right",
+    "lineHeight": "Line Height: {{value}}",
+    "letterSpacing": "Letter Spacing: {{value}}",
+    "shadow": "Shadow",
+    "stroke": "Stroke",
+    "enable": "Enable",
+    "shadowX": "X: {{value}}",
+    "shadowY": "Y: {{value}}",
+    "shadowBlur": "Blur: {{value}}",
+    "strokeWidth": "Width: {{value}}"
+  },
+  "export": {
+    "title": "Export Image",
+    "format": "Format",
+    "quality": "Quality: {{value}}%",
+    "cancel": "Cancel",
+    "export": "Export"
+  },
+  "presets": {
+    "square": "Square",
+    "portrait": "Portrait",
+    "story": "Story"
+  }
+}

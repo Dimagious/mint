@@ -1,4 +1,4 @@
-import type { EditorDocument } from '@social-posts-helper/core';
+import type { EditorDocument } from '@mint/core';
 
 export interface Command {
   execute(doc: EditorDocument): EditorDocument;

@@ -30,11 +30,11 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm --filter @social-posts-helper/core build
-      - run: pnpm --filter @social-posts-helper/utils build
-      - run: pnpm --filter @social-posts-helper/editor build
-      - run: pnpm --filter @social-posts-helper/ui build
-      - run: GITHUB_PAGES=true pnpm --filter @social-posts-helper/web build
+      - run: pnpm --filter @mint/core build
+      - run: pnpm --filter @mint/utils build
+      - run: pnpm --filter @mint/editor build
+      - run: pnpm --filter @mint/ui build
+      - run: GITHUB_PAGES=true pnpm --filter @mint/web build
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

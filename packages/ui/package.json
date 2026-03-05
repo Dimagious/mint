@@ -1,5 +1,5 @@
 {
-  "name": "@social-posts-helper/ui",
+  "name": "@mint/ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,11 +17,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@social-posts-helper/core": "workspace:*",
+    "@mint/core": "workspace:*",
     "@mui/material": "^6.0.0",
     "@mui/icons-material": "^6.0.0",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
+    "i18next": "^24.0.0",
+    "react-i18next": "^15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },

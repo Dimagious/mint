@@ -15,11 +15,11 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @social-posts-helper/core build
-RUN pnpm --filter @social-posts-helper/utils build
-RUN pnpm --filter @social-posts-helper/editor build
-RUN pnpm --filter @social-posts-helper/ui build
-RUN pnpm --filter @social-posts-helper/web build
+RUN pnpm --filter @mint/core build
+RUN pnpm --filter @mint/utils build
+RUN pnpm --filter @mint/editor build
+RUN pnpm --filter @mint/ui build
+RUN pnpm --filter @mint/web build
 
 FROM nginx:alpine AS production
 COPY docker/nginx/nginx.conf /etc/nginx/conf.d/default.conf

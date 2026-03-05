@@ -11,7 +11,8 @@ import {
   Typography,
   Box,
 } from '@mui/material';
-import type { ExportFormat, ExportOptions } from '@social-posts-helper/core';
+import { useTranslation } from 'react-i18next';
+import type { ExportFormat, ExportOptions } from '@mint/core';
 
 interface ExportDialogProps {
   open: boolean;
@@ -24,16 +25,17 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   onClose,
   onExport,
 }) => {
+  const { t } = useTranslation();
   const [format, setFormat] = useState<ExportFormat>('png');
   const [quality, setQuality] = useState(90);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Export Image</DialogTitle>
+      <DialogTitle>{t('export.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 1 }}>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Format
+            {t('export.format')}
           </Typography>
           <ToggleButtonGroup
             value={format}
@@ -51,7 +53,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
         {format === 'jpeg' && (
           <Box sx={{ mt: 3 }}>
-            <Typography variant="body2">Quality: {quality}%</Typography>
+            <Typography variant="body2">
+              {t('export.quality', { value: quality })}
+            </Typography>
             <Slider
               value={quality}
               min={10}
@@ -63,7 +67,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('export.cancel')}</Button>
         <Button
           variant="contained"
           onClick={() => {
@@ -71,7 +75,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             onClose();
           }}
         >
-          Export
+          {t('export.export')}
         </Button>
       </DialogActions>
     </Dialog>

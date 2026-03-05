@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CANVAS_PRESETS } from '@social-posts-helper/core';
+import { CANVAS_PRESETS } from '@mint/core';
 
 describe('web app', () => {
   it('should have canvas presets available', () => {

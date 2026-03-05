@@ -1,5 +1,5 @@
 {
-  "name": "@social-posts-helper/api",
+  "name": "@mint/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@social-posts-helper/core": "workspace:*"
+    "@mint/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

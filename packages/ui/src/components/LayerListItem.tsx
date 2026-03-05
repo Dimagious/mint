@@ -9,7 +9,7 @@ import {
   ArrowUpward,
   ArrowDownward,
 } from '@mui/icons-material';
-import type { TextLayerData } from '@social-posts-helper/core';
+import type { TextLayerData } from '@mint/core';
 
 interface LayerListItemProps {
   layer: TextLayerData;
@@ -22,6 +22,7 @@ interface LayerListItemProps {
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
+  emptyText?: string;
 }
 
 export const LayerListItem: React.FC<LayerListItemProps> = ({
@@ -35,6 +36,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
   onMoveDown,
   isFirst,
   isLast,
+  emptyText = 'Empty text',
 }) => {
   return (
     <ListItem
@@ -108,7 +110,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
       }
     >
       <ListItemText
-        primary={layer.text.slice(0, 30) || 'Empty text'}
+        primary={layer.text.slice(0, 30) || emptyText}
         primaryTypographyProps={{
           noWrap: true,
           fontSize: '0.85rem',

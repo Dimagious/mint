@@ -4,11 +4,8 @@ import { AddTextLayerCommand } from '../commands/add-text-layer-command';
 import { RemoveTextLayerCommand } from '../commands/remove-text-layer-command';
 import { UpdateTextLayerCommand } from '../commands/update-text-layer-command';
 import { ReorderLayerCommand } from '../commands/reorder-layer-command';
-import type { EditorDocument, TextLayerData } from '@social-posts-helper/core';
-import {
-  createDefaultDocument,
-  createTextLayer,
-} from '@social-posts-helper/core';
+import type { EditorDocument, TextLayerData } from '@mint/core';
+import { createDefaultDocument, createTextLayer } from '@mint/core';
 
 function makeDoc(...layers: TextLayerData[]): EditorDocument {
   return { ...createDefaultDocument(), layers };
