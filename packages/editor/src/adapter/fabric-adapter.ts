@@ -176,6 +176,7 @@ export class FabricAdapter {
     this.syncing = true;
     const preset = getPresetById(doc.presetId);
 
+    this.canvas.backgroundColor = doc.background.color || '#1a1a2e';
     this.syncBackground(doc.background.dataUrl, doc.background.fit, preset);
     this.syncLayers(doc.layers);
     this.syncSelection(selectedLayerId);

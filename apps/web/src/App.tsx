@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   AppBar,
@@ -17,10 +17,12 @@ import {
   TextFields,
   Download,
   LocalCafe,
+  Save,
+  FolderOpen,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
-import type { ExportOptions } from '@mint/core';
+import type { EditorDocument, ExportOptions } from '@mint/core';
 import { ExportDialog } from '@mint/ui';
 import { CanvasPanel } from './components/CanvasPanel';
 import { LayersPanel } from './components/LayersPanel';
@@ -37,6 +39,116 @@ export const App: React.FC = () => {
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const addTextLayer = useEditorStore((s) => s.addTextLayer);
+  const doc = useEditorStore((s) => s.document);
+  const loadDocument = useEditorStore((s) => s.loadDocument);
+  const selectedLayerId = useEditorStore((s) => s.selectedLayerId);
+  const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
+  const copyLayer = useEditorStore((s) => s.copyLayer);
+  const pasteLayer = useEditorStore((s) => s.pasteLayer);
+  const deleteSelectedLayer = useEditorStore((s) => s.deleteSelectedLayer);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if (ctrl && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      } else if (ctrl && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+        e.preventDefault();
+        redo();
+      } else if (ctrl && e.key === 'd' && selectedLayerId) {
+        e.preventDefault();
+        duplicateLayer(selectedLayerId);
+      } else if (ctrl && e.key === 'c') {
+        e.preventDefault();
+        copyLayer();
+      } else if (ctrl && e.key === 'v') {
+        e.preventDefault();
+        pasteLayer();
+      } else if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        selectedLayerId
+      ) {
+        e.preventDefault();
+        deleteSelectedLayer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    undo,
+    redo,
+    selectedLayerId,
+    duplicateLayer,
+    copyLayer,
+    pasteLayer,
+    deleteSelectedLayer,
+  ]);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem('mint-project', JSON.stringify(doc));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [doc]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('mint-project');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as EditorDocument;
+        if (parsed.presetId && parsed.layers) {
+          loadDocument(parsed);
+        }
+      } catch {
+        // ignore invalid data
+      }
+    }
+  }, []);
+
+  const handleSaveFile = useCallback(() => {
+    const json = JSON.stringify(doc, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = 'mint-project.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [doc]);
+
+  const handleLoadFile = useCallback(() => {
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const parsed = JSON.parse(text) as EditorDocument;
+        if (parsed.presetId && parsed.layers) {
+          loadDocument(parsed);
+        }
+      } catch {
+        // ignore invalid file
+      }
+    };
+    input.click();
+  }, [loadDocument]);
 
   const [canvasPanelRef, setCanvasPanelRef] = useState<{
     handleExport: (opts: ExportOptions) => void;
@@ -105,6 +217,16 @@ export const App: React.FC = () => {
             >
               {t('toolbar.export')}
             </Button>
+            <Tooltip title={t('toolbar.save')}>
+              <IconButton size="small" onClick={handleSaveFile}>
+                <Save fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('toolbar.load')}>
+              <IconButton size="small" onClick={handleLoadFile}>
+                <FolderOpen fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={t('toolbar.donate')}>
               <IconButton
                 size="small"

@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Box, Typography, List, Button, Paper } from '@mui/material';
+import { Box, Typography, List, Button, Paper, Stack } from '@mui/material';
 import { Add, Image } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
@@ -24,10 +24,10 @@ export const LayersPanel: React.FC = () => {
       const file = e.target.files?.[0];
       if (!file) return;
       const dataUrl = await readFileAsDataUrl(file);
-      setBackground({ dataUrl, fit: doc.background.fit });
+      setBackground({ ...doc.background, dataUrl });
       e.target.value = '';
     },
-    [setBackground, doc.background.fit],
+    [setBackground, doc.background],
   );
 
   const reversedLayers = [...doc.layers].reverse();
@@ -49,37 +49,54 @@ export const LayersPanel: React.FC = () => {
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
           {t('layers.background')}
         </Typography>
-        <Button
-          component="label"
-          size="small"
-          variant="outlined"
-          startIcon={<Image />}
-          fullWidth
-        >
-          {t('layers.uploadImage')}
-          <input
-            type="file"
-            hidden
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleImageUpload}
-            data-testid="bg-upload"
-          />
-        </Button>
-        {doc.background.dataUrl && (
+        <Stack spacing={0.5}>
           <Button
+            component="label"
             size="small"
+            variant="outlined"
+            startIcon={<Image />}
             fullWidth
-            sx={{ mt: 0.5 }}
-            onClick={() =>
-              setBackground({
-                ...doc.background,
-                fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
-              })
-            }
           >
-            {t('layers.fit', { fit: doc.background.fit })}
+            {t('layers.uploadImage')}
+            <input
+              type="file"
+              hidden
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageUpload}
+              data-testid="bg-upload"
+            />
           </Button>
-        )}
+          {doc.background.dataUrl && (
+            <Button
+              size="small"
+              fullWidth
+              onClick={() =>
+                setBackground({
+                  ...doc.background,
+                  fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
+                })
+              }
+            >
+              {t('layers.fit', { fit: doc.background.fit })}
+            </Button>
+          )}
+          <Box>
+            <Typography variant="caption">{t('layers.bgColor')}</Typography>
+            <input
+              type="color"
+              value={doc.background.color || '#1a1a2e'}
+              onChange={(e) =>
+                setBackground({ ...doc.background, color: e.target.value })
+              }
+              style={{
+                width: '100%',
+                height: 28,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            />
+          </Box>
+        </Stack>
       </Box>
 
       <Box

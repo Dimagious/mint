@@ -5,7 +5,9 @@
     "addText": "Add Text",
     "export": "Export",
     "canvasSize": "Canvas Size",
-    "donate": "Buy me a coffee"
+    "donate": "Buy me a coffee",
+    "save": "Save project",
+    "load": "Load project"
   },
   "layers": {
     "background": "Background",
@@ -13,7 +15,11 @@
     "fit": "Fit: {{fit}}",
     "title": "Layers",
     "add": "Add",
-    "emptyText": "Empty text"
+    "emptyText": "Empty text",
+    "bgColor": "Canvas Color"
+  },
+  "canvas": {
+    "dropImage": "Drop image here"
   },
   "properties": {
     "title": "Properties",

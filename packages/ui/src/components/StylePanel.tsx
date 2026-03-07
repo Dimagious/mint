@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import {
+  Autocomplete,
   Box,
   TextField,
   Slider,
@@ -18,6 +19,7 @@ import {
 import { ExpandMore } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { TextLayerData, TextStyle } from '@mint/core';
+import { ALL_FONTS, loadGoogleFont } from '../fonts';
 
 interface StylePanelProps {
   layer: TextLayerData;
@@ -47,23 +49,43 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
       />
 
       <Stack spacing={2}>
-        <FormControl size="small" fullWidth>
-          <InputLabel>{t('style.font')}</InputLabel>
-          <Select
-            value={layer.style.fontFamily}
-            label={t('style.font')}
-            onChange={(e) =>
-              updateStyle({ fontFamily: e.target.value as string })
+        <Autocomplete
+          size="small"
+          options={ALL_FONTS}
+          getOptionLabel={(opt) => opt.family}
+          groupBy={(opt) => opt.category}
+          value={
+            ALL_FONTS.find((f) => f.family === layer.style.fontFamily) || {
+              family: layer.style.fontFamily,
+              category: 'sans-serif' as const,
             }
-          >
-            <MenuItem value="Arial">Arial</MenuItem>
-            <MenuItem value="Georgia">Georgia</MenuItem>
-            <MenuItem value="Times New Roman">Times New Roman</MenuItem>
-            <MenuItem value="Courier New">Courier New</MenuItem>
-            <MenuItem value="Verdana">Verdana</MenuItem>
-            <MenuItem value="Impact">Impact</MenuItem>
-          </Select>
-        </FormControl>
+          }
+          onChange={(_, val) => {
+            if (val) {
+              loadGoogleFont(val.family);
+              updateStyle({ fontFamily: val.family });
+            }
+          }}
+          renderOption={(props, option) => {
+            const { key, ...rest } = props;
+            return (
+              <li key={key} {...rest}>
+                <span
+                  style={{
+                    fontFamily: `"${option.family}", ${option.category}`,
+                  }}
+                >
+                  {option.family}
+                </span>
+              </li>
+            );
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label={t('style.font')} />
+          )}
+          disableClearable
+          fullWidth
+        />
 
         <Box>
           <Typography variant="caption">

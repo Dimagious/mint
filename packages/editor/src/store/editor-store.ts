@@ -25,6 +25,7 @@ export interface EditorState {
   selectedLayerId: string | null;
   canUndo: boolean;
   canRedo: boolean;
+  clipboard: Omit<TextLayerData, 'id'> | null;
 
   setPreset: (presetId: CanvasPresetId) => void;
   setBackground: (background: BackgroundData) => void;
@@ -36,8 +37,13 @@ export interface EditorState {
   ) => void;
   reorderLayer: (layerId: string, direction: 'up' | 'down') => void;
   selectLayer: (layerId: string | null) => void;
+  duplicateLayer: (layerId: string) => void;
+  copyLayer: () => void;
+  pasteLayer: () => void;
+  deleteSelectedLayer: () => void;
   undo: () => void;
   redo: () => void;
+  loadDocument: (doc: EditorDocument) => void;
   exportCanvas: (
     canvas: HTMLCanvasElement,
     options: ExportOptions,
@@ -51,6 +57,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedLayerId: null,
   canUndo: false,
   canRedo: false,
+  clipboard: null,
 
   setPreset: (presetId) => {
     const cmd = new ChangePresetCommand(presetId);
@@ -121,6 +128,42 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ selectedLayerId: layerId });
   },
 
+  duplicateLayer: (layerId) => {
+    const state = get();
+    const source = state.document.layers.find((l) => l.id === layerId);
+    if (!source) return;
+    const { id: _, ...rest } = source;
+    state.addTextLayer({ ...rest, x: rest.x + 20, y: rest.y + 20 });
+  },
+
+  copyLayer: () => {
+    const state = get();
+    if (!state.selectedLayerId) return;
+    const source = state.document.layers.find(
+      (l) => l.id === state.selectedLayerId,
+    );
+    if (!source) return;
+    const { id: _, ...rest } = source;
+    set({ clipboard: rest });
+  },
+
+  pasteLayer: () => {
+    const state = get();
+    if (!state.clipboard) return;
+    state.addTextLayer({
+      ...state.clipboard,
+      x: state.clipboard.x + 20,
+      y: state.clipboard.y + 20,
+    });
+  },
+
+  deleteSelectedLayer: () => {
+    const state = get();
+    if (state.selectedLayerId) {
+      state.removeTextLayer(state.selectedLayerId);
+    }
+  },
+
   undo: () => {
     const newDoc = history.undo(get().document);
     set({
@@ -136,6 +179,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       document: newDoc,
       canUndo: history.canUndo,
       canRedo: history.canRedo,
+    });
+  },
+
+  loadDocument: (doc) => {
+    history.clear();
+    set({
+      document: doc,
+      selectedLayerId: null,
+      canUndo: false,
+      canRedo: false,
     });
   },
 

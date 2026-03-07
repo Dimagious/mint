@@ -48,6 +48,7 @@ export interface TextLayerData {
 export interface BackgroundData {
   readonly dataUrl: string | null;
   readonly fit: 'contain' | 'cover';
+  readonly color: string;
 }
 
 export interface EditorDocument {
