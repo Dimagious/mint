@@ -43,7 +43,10 @@
     "shadowX": "X: {{value}}",
     "shadowY": "Y: {{value}}",
     "shadowBlur": "Размытие: {{value}}",
-    "strokeWidth": "Толщина: {{value}}"
+    "strokeWidth": "Толщина: {{value}}",
+    "background": "Заливка фона",
+    "bgPadding": "Отступ: {{value}}",
+    "bgRadius": "Скругление: {{value}}"
   },
   "export": {
     "title": "Экспорт изображения",

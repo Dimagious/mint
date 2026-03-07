@@ -358,6 +358,103 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
             )}
           </AccordionDetails>
         </Accordion>
+
+        <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="body2">{t('style.background')}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={layer.style.background !== null}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateStyle({
+                        background: {
+                          color: 'rgba(0,0,0,0.6)',
+                          padding: 10,
+                          borderRadius: 4,
+                        },
+                      });
+                    } else {
+                      updateStyle({ background: null });
+                    }
+                  }}
+                  size="small"
+                />
+              }
+              label={t('style.enable')}
+            />
+            {layer.style.background && (
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                <Box>
+                  <Typography variant="caption">{t('style.color')}</Typography>
+                  <input
+                    type="color"
+                    value={layer.style.background.color}
+                    onChange={(e) =>
+                      updateStyle({
+                        background: {
+                          ...layer.style.background!,
+                          color: e.target.value,
+                        },
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      height: 28,
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption">
+                    {t('style.bgPadding', {
+                      value: layer.style.background.padding,
+                    })}
+                  </Typography>
+                  <Slider
+                    value={layer.style.background.padding}
+                    min={0}
+                    max={40}
+                    onChange={(_, v) =>
+                      updateStyle({
+                        background: {
+                          ...layer.style.background!,
+                          padding: v as number,
+                        },
+                      })
+                    }
+                    size="small"
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption">
+                    {t('style.bgRadius', {
+                      value: layer.style.background.borderRadius,
+                    })}
+                  </Typography>
+                  <Slider
+                    value={layer.style.background.borderRadius}
+                    min={0}
+                    max={30}
+                    onChange={(_, v) =>
+                      updateStyle({
+                        background: {
+                          ...layer.style.background!,
+                          borderRadius: v as number,
+                        },
+                      })
+                    }
+                    size="small"
+                  />
+                </Box>
+              </Stack>
+            )}
+          </AccordionDetails>
+        </Accordion>
       </Stack>
     </Box>
   );

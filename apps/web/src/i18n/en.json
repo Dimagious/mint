@@ -43,7 +43,10 @@
     "shadowX": "X: {{value}}",
     "shadowY": "Y: {{value}}",
     "shadowBlur": "Blur: {{value}}",
-    "strokeWidth": "Width: {{value}}"
+    "strokeWidth": "Width: {{value}}",
+    "background": "Background Fill",
+    "bgPadding": "Padding: {{value}}",
+    "bgRadius": "Border Radius: {{value}}"
   },
   "export": {
     "title": "Export Image",

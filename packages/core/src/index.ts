@@ -6,6 +6,7 @@ export type {
   TextStyle,
   TextShadow,
   TextStroke,
+  TextBackground,
 } from './types/editor-document';
 export type { ExportFormat, ExportOptions } from './types/export';
 export type { LayerAction } from './types/layer-action';

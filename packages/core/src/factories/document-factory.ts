@@ -23,6 +23,7 @@ const DEFAULT_TEXT_STYLE: TextStyle = {
   letterSpacing: 0,
   shadow: null,
   stroke: null,
+  background: null,
 };
 
 export function createTextLayer(

@@ -12,6 +12,12 @@ export interface TextStroke {
   readonly color: string;
 }
 
+export interface TextBackground {
+  readonly color: string;
+  readonly padding: number;
+  readonly borderRadius: number;
+}
+
 export interface TextStyle {
   readonly fontFamily: string;
   readonly fontSize: number;
@@ -23,6 +29,7 @@ export interface TextStyle {
   readonly letterSpacing: number;
   readonly shadow: TextShadow | null;
   readonly stroke: TextStroke | null;
+  readonly background: TextBackground | null;
 }
 
 export interface TextLayerData {

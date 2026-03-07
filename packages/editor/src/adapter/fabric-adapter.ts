@@ -8,6 +8,10 @@ type ModifiedCallback = (
   changes: Partial<Omit<TextLayerData, 'id'>>,
 ) => void;
 
+const SNAP_THRESHOLD = 8;
+const GUIDE_COLOR = '#ff3b6b';
+const GUIDE_DASH = [4, 4];
+
 export class FabricAdapter {
   private canvas: fabric.Canvas;
   private onSelectionChange: SelectionCallback | null = null;
@@ -15,6 +19,8 @@ export class FabricAdapter {
   private objectMap = new Map<string, fabric.FabricObject>();
   private backgroundImage: fabric.FabricImage | null = null;
   private syncing = false;
+  private guideLines: fabric.Line[] = [];
+  private currentPreset: CanvasPreset | null = null;
 
   constructor(canvasElement: HTMLCanvasElement) {
     this.canvas = new fabric.Canvas(canvasElement, {
@@ -43,8 +49,16 @@ export class FabricAdapter {
       this.onSelectionChange?.(null);
     });
 
+    this.canvas.on('object:moving', (e) => {
+      if (this.syncing || !this.currentPreset) return;
+      const obj = e.target;
+      if (!obj) return;
+      this.snapToCenter(obj);
+    });
+
     this.canvas.on('object:modified', (e) => {
       if (this.syncing) return;
+      this.clearGuideLines();
       const obj = e.target;
       if (!obj) return;
       const layerId = this.getLayerIdFromObject(obj);
@@ -60,6 +74,78 @@ export class FabricAdapter {
 
       this.onObjectModified?.(layerId, changes);
     });
+  }
+
+  private snapToCenter(obj: fabric.FabricObject): void {
+    if (!this.currentPreset) return;
+
+    const canvasCenterX = this.currentPreset.width / 2;
+    const canvasCenterY = this.currentPreset.height / 2;
+
+    const objCenterX =
+      (obj.left ?? 0) + ((obj.width ?? 0) * (obj.scaleX ?? 1)) / 2;
+    const objCenterY =
+      (obj.top ?? 0) + ((obj.height ?? 0) * (obj.scaleY ?? 1)) / 2;
+
+    this.clearGuideLines();
+
+    let snappedX = false;
+    let snappedY = false;
+
+    if (Math.abs(objCenterX - canvasCenterX) < SNAP_THRESHOLD) {
+      obj.set({
+        left: canvasCenterX - ((obj.width ?? 0) * (obj.scaleX ?? 1)) / 2,
+      });
+      snappedX = true;
+    }
+
+    if (Math.abs(objCenterY - canvasCenterY) < SNAP_THRESHOLD) {
+      obj.set({
+        top: canvasCenterY - ((obj.height ?? 0) * (obj.scaleY ?? 1)) / 2,
+      });
+      snappedY = true;
+    }
+
+    if (snappedX) {
+      const vLine = new fabric.Line(
+        [canvasCenterX, 0, canvasCenterX, this.currentPreset.height],
+        {
+          stroke: GUIDE_COLOR,
+          strokeWidth: 1,
+          strokeDashArray: GUIDE_DASH,
+          selectable: false,
+          evented: false,
+          excludeFromExport: true,
+        },
+      );
+      this.canvas.add(vLine);
+      this.guideLines.push(vLine);
+    }
+
+    if (snappedY) {
+      const hLine = new fabric.Line(
+        [0, canvasCenterY, this.currentPreset.width, canvasCenterY],
+        {
+          stroke: GUIDE_COLOR,
+          strokeWidth: 1,
+          strokeDashArray: GUIDE_DASH,
+          selectable: false,
+          evented: false,
+          excludeFromExport: true,
+        },
+      );
+      this.canvas.add(hLine);
+      this.guideLines.push(hLine);
+    }
+
+    this.canvas.requestRenderAll();
+  }
+
+  private clearGuideLines(): void {
+    for (const line of this.guideLines) {
+      this.canvas.remove(line);
+    }
+    this.guideLines = [];
   }
 
   setCallbacks(
@@ -78,6 +164,7 @@ export class FabricAdapter {
   }
 
   setDimensions(preset: CanvasPreset, scale: number): void {
+    this.currentPreset = preset;
     this.canvas.setDimensions({
       width: preset.width * scale,
       height: preset.height * scale,
@@ -231,6 +318,18 @@ export class FabricAdapter {
       lockScalingY: layer.locked,
     });
 
+    if (layer.style.background) {
+      textbox.set({
+        backgroundColor: layer.style.background.color,
+        padding: layer.style.background.padding,
+      });
+    } else {
+      textbox.set({
+        backgroundColor: '',
+        padding: 0,
+      });
+    }
+
     if (layer.style.shadow) {
       textbox.set({
         shadow: new fabric.Shadow({
@@ -279,6 +378,8 @@ export class FabricAdapter {
     const currentWidth = this.canvas.getWidth();
     const currentHeight = this.canvas.getHeight();
 
+    this.clearGuideLines();
+
     this.canvas.setDimensions({ width: preset.width, height: preset.height });
     this.canvas.setZoom(1);
     this.canvas.requestRenderAll();
@@ -298,8 +399,10 @@ export class FabricAdapter {
   }
 
   dispose(): void {
+    this.clearGuideLines();
     this.canvas.dispose();
     this.objectMap.clear();
     this.backgroundImage = null;
+    this.currentPreset = null;
   }
 }
