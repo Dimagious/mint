@@ -1,12 +1,16 @@
 # MINT
 
-**Merge Image 'N Text** - a tiny browser editor to make social images fast.
+**MINT = Merge Image'N Text** - a tiny browser editor to make social images fast.
 
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm >= 9](https://img.shields.io/badge/pnpm-%3E%3D9-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![Deploy: GitHub Pages](https://img.shields.io/badge/deploy-GitHub%20Pages-222?logo=github&logoColor=white)](./.github/workflows/deploy-pages.yml)
 
 MINT helps you create post/stories visuals with text overlays, export them quickly, and iterate without opening heavy design tools.
+
+## Name
+
+**MINT** stands for **Merge Image'N Text**.
 
 ## Live Demo
 
