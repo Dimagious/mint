@@ -2,6 +2,10 @@
 
 [English](README.md) | [Русский](README.ru.md)
 
+<p align="center">
+  <img src="docs/logo.png" alt="MINT logo" width="120" />
+</p>
+
 **MINT = Merge Image'N Text** — лёгкий браузерный редактор для быстрого создания социальных картинок.
 
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
