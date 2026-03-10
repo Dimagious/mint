@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import type { EditorDocument, ExportOptions } from '@mint/core';
 import { ExportDialog } from '@mint/ui';
-import mintBrandLogo from './assets/mint-brand.svg';
+import mintPrimaryLogo from './assets/mint-logo-primary.png';
 import { CanvasPanel } from './components/CanvasPanel';
 import { LayersPanel } from './components/LayersPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
@@ -208,9 +208,9 @@ export const App: React.FC = () => {
           variant="dense"
           sx={{
             gap: 1,
-            minHeight: isMobile ? 58 : undefined,
+            minHeight: isMobile ? 66 : 74,
             flexWrap: isMobile ? 'wrap' : 'nowrap',
-            py: isMobile ? 0.75 : 0.5,
+            py: isMobile ? 0.5 : 0.6,
           }}
         >
           <Box
@@ -219,13 +219,19 @@ export const App: React.FC = () => {
               mr: isMobile ? 0.5 : 2,
               display: 'flex',
               alignItems: 'center',
+              flexShrink: 0,
             }}
           >
             <Box
               component="img"
-              src={mintBrandLogo}
+              src={mintPrimaryLogo}
               alt="MINT logo"
-              sx={{ height: isMobile ? 34 : 44, width: 'auto' }}
+              sx={{
+                height: isMobile ? 46 : 60,
+                width: 'auto',
+                display: 'block',
+                flexShrink: 0,
+              }}
             />
           </Box>
 
