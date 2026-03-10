@@ -1,5 +1,13 @@
 import React, { useCallback } from 'react';
-import { Box, Typography, List, Button, Paper, Stack } from '@mui/material';
+import {
+  Box,
+  Typography,
+  List,
+  Button,
+  Paper,
+  Stack,
+  ListItem,
+} from '@mui/material';
 import { Add, HideImage, Image } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
@@ -84,7 +92,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
                   })
                 }
               >
-                {t('layers.fit', { fit: doc.background.fit })}
+                {doc.background.fit === 'cover'
+                  ? t('layers.fitCover')
+                  : t('layers.fitContain')}
               </Button>
               <Button
                 size="small"
@@ -147,6 +157,13 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
       </Box>
 
       <List sx={{ flex: 1, overflow: 'auto', p: 0.5 }}>
+        {reversedLayers.length === 0 && (
+          <ListItem>
+            <Typography variant="body2" color="text.secondary">
+              {t('layers.emptyHint')}
+            </Typography>
+          </ListItem>
+        )}
         {reversedLayers.map((layer, visualIndex) => {
           const actualIndex = doc.layers.length - 1 - visualIndex;
           return (

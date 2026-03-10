@@ -104,6 +104,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
               e.stopPropagation();
               onDelete();
             }}
+            sx={{ '&:hover': { color: 'error.main' } }}
           >
             <Delete fontSize="small" />
           </IconButton>
@@ -111,7 +112,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
       }
     >
       <ListItemText
-        primary={layer.text.slice(0, 30) || emptyText}
+        primary={layer.text || emptyText}
         primaryTypographyProps={{
           noWrap: true,
           fontSize: '0.85rem',

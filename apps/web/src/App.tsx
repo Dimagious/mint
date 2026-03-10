@@ -8,6 +8,7 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Snackbar,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<HTMLElement | null>(
     null,
   );
+  const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
 
   const canUndo = useEditorStore((s) => s.canUndo);
   const canRedo = useEditorStore((s) => s.canRedo);
@@ -102,7 +104,7 @@ export const App: React.FC = () => {
       } else if (ctrl && e.key === 'd' && selectedLayerId) {
         e.preventDefault();
         duplicateLayer(selectedLayerId);
-      } else if (ctrl && e.key === 'c') {
+      } else if (ctrl && e.key === 'c' && selectedLayerId) {
         e.preventDefault();
         copyLayer();
       } else if (ctrl && e.key === 'v') {
@@ -201,9 +203,11 @@ export const App: React.FC = () => {
         const parsed = JSON.parse(text);
         if (isEditorDocument(parsed)) {
           loadDocument(parsed);
+        } else {
+          setSnackbarMsg(t('errors.invalidFile'));
         }
       } catch {
-        // ignore invalid file
+        setSnackbarMsg(t('errors.invalidFile'));
       }
     };
     input.click();
@@ -215,9 +219,13 @@ export const App: React.FC = () => {
 
   const handleExport = useCallback(
     (options: ExportOptions) => {
-      canvasPanelRef?.handleExport(options);
+      if (!canvasPanelRef) {
+        setSnackbarMsg(t('errors.exportFailed'));
+        return;
+      }
+      canvasPanelRef.handleExport(options);
     },
-    [canvasPanelRef],
+    [canvasPanelRef, t],
   );
 
   const handleLanguageChange = (
@@ -525,7 +533,6 @@ export const App: React.FC = () => {
             anchor="bottom"
             open={mobileLayersOpen}
             onClose={() => setMobileLayersOpen(false)}
-            ModalProps={{ keepMounted: true }}
           >
             <Box sx={{ height: '72vh' }}>
               <LayersPanel mobile />
@@ -536,7 +543,6 @@ export const App: React.FC = () => {
             anchor="bottom"
             open={mobilePropertiesOpen}
             onClose={() => setMobilePropertiesOpen(false)}
-            ModalProps={{ keepMounted: true }}
           >
             <Box sx={{ height: '72vh' }}>
               <PropertiesPanel mobile />
@@ -549,6 +555,13 @@ export const App: React.FC = () => {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         onExport={handleExport}
+      />
+
+      <Snackbar
+        open={snackbarMsg !== null}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarMsg(null)}
+        message={snackbarMsg}
       />
     </Box>
   );

@@ -16,12 +16,16 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
   const presetId = useEditorStore((s) => s.document.presetId);
   const setPreset = useEditorStore((s) => s.setPreset);
 
+  const label = compact
+    ? t('toolbar.canvasSizeShort')
+    : t('toolbar.canvasSize');
+
   return (
     <FormControl size="small" sx={{ minWidth: compact ? 132 : 200 }}>
-      <InputLabel>{t('toolbar.canvasSize')}</InputLabel>
+      <InputLabel>{label}</InputLabel>
       <Select
         value={presetId}
-        label={t('toolbar.canvasSize')}
+        label={label}
         sx={{
           '.MuiSelect-select': {
             fontSize: compact ? '0.8rem' : '0.875rem',

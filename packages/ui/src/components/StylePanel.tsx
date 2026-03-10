@@ -117,6 +117,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignHorizontal('left')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.left')}
                 </Button>
@@ -124,6 +125,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignHorizontal('center')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.center')}
                 </Button>
@@ -131,6 +133,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignHorizontal('right')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.right')}
                 </Button>
@@ -143,6 +146,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignVertical('top')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.top')}
                 </Button>
@@ -150,6 +154,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignVertical('center')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.middle')}
                 </Button>
@@ -157,6 +162,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   size="small"
                   variant="outlined"
                   onClick={() => onAlignVertical('bottom')}
+                  sx={{ flex: 1, minWidth: 0, px: 0 }}
                 >
                   {t('style.bottom')}
                 </Button>
@@ -252,7 +258,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
           <Slider
             value={layer.style.fontSize}
             min={8}
-            max={200}
+            max={400}
             onChange={(_, v) => updateStyle({ fontSize: v as number })}
             size="small"
           />
@@ -355,7 +361,24 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
         <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="body2">{t('style.shadow')}</Typography>
+            <Typography
+              variant="body2"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            >
+              {t('style.shadow')}
+              {layer.style.shadow !== null && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <FormControlLabel
@@ -471,7 +494,24 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
         <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="body2">{t('style.stroke')}</Typography>
+            <Typography
+              variant="body2"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            >
+              {t('style.stroke')}
+              {layer.style.stroke !== null && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <FormControlLabel
@@ -544,7 +584,24 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
         <Accordion disableGutters sx={{ bgcolor: 'background.default' }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="body2">{t('style.background')}</Typography>
+            <Typography
+              variant="body2"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            >
+              {t('style.background')}
+              {layer.style.background !== null && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <FormControlLabel

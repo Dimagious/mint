@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Collapse,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -51,7 +52,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           </ToggleButtonGroup>
         </Box>
 
-        {format === 'jpeg' && (
+        <Collapse in={format === 'jpeg'} unmountOnExit>
           <Box sx={{ mt: 3 }}>
             <Typography variant="body2">
               {t('export.quality', { value: quality })}
@@ -64,7 +65,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
               onChange={(_, v) => setQuality(v as number)}
             />
           </Box>
-        )}
+        </Collapse>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('export.cancel')}</Button>

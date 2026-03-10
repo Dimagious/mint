@@ -5,6 +5,7 @@
     "addText": "Add Text",
     "export": "Export",
     "canvasSize": "Canvas Size",
+    "canvasSizeShort": "Canvas",
     "donate": "Buy me a coffee",
     "save": "Save project",
     "load": "Load project",
@@ -15,10 +16,12 @@
     "background": "Background",
     "uploadImage": "Upload Image",
     "removeImage": "Clear Image",
-    "fit": "Fit: {{fit}}",
+    "fitCover": "Mode: Crop",
+    "fitContain": "Mode: Fit",
     "title": "Layers",
     "add": "Add",
     "emptyText": "Empty text",
+    "emptyHint": "Click «Add» to create a layer",
     "bgColor": "Canvas Color",
     "bgColorHint": "Canvas color is visible in areas not covered by the image."
   },
@@ -71,8 +74,7 @@
     "shadowBlur": "Blur: {{value}}",
     "strokeWidth": "Width: {{value}}",
     "background": "Background Fill",
-    "bgPadding": "Padding: {{value}}",
-    "bgRadius": "Border Radius: {{value}}"
+    "bgPadding": "Padding: {{value}}"
   },
   "export": {
     "title": "Export Image",
@@ -80,6 +82,10 @@
     "quality": "Quality: {{value}}%",
     "cancel": "Cancel",
     "export": "Export"
+  },
+  "errors": {
+    "invalidFile": "Invalid project file format",
+    "exportFailed": "Export failed: canvas not ready"
   },
   "presets": {
     "square": "Square",

@@ -25,7 +25,31 @@ interface CanvasPanelProps {
   showSafeZones: boolean;
 }
 
-const CANVAS_SCALE = 0.5;
+const MAX_SCALE = 0.5;
+
+function computeScale(presetId: string): number {
+  const p = { width: 1080, height: 1080 }; // fallback
+  try {
+    const preset = getPresetById(
+      presetId as Parameters<typeof getPresetById>[0],
+    );
+    p.width = preset.width;
+    p.height = preset.height;
+  } catch {
+    // use fallback
+  }
+  const isMobileView = window.innerWidth < 900;
+  const panelsW = isMobileView ? 0 : 560;
+  const toolbarH = isMobileView ? 74 : 90;
+  const paddingH = isMobileView ? 20 : 48;
+  const paddingW = isMobileView ? 20 : 48;
+  const availH = window.innerHeight - toolbarH - paddingH;
+  const availW = window.innerWidth - panelsW - paddingW;
+  return Math.max(
+    0.05,
+    Math.min(MAX_SCALE, availH / p.height, availW / p.width),
+  );
+}
 
 export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
   function CanvasPanel({ showSafeZones }, ref) {
@@ -38,6 +62,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
     const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
     const setBackground = useEditorStore((s) => s.setBackground);
     const [dragging, setDragging] = useState(false);
+    const [scale, setScale] = useState(() => computeScale(doc.presetId));
 
     useEffect(() => {
       if (!canvasRef.current) return;
@@ -60,12 +85,19 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
     }, []);
 
     useEffect(() => {
+      const onResize = () => setScale(computeScale(doc.presetId));
+      onResize();
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, [doc.presetId]);
+
+    useEffect(() => {
       const adapter = adapterRef.current;
       if (!adapter) return;
       const preset = getPresetById(doc.presetId);
-      adapter.setDimensions(preset, CANVAS_SCALE);
+      adapter.setDimensions(preset, scale);
       adapter.syncDocument(doc, selectedLayerId);
-    }, [doc, selectedLayerId]);
+    }, [doc, selectedLayerId, scale]);
 
     const handleExport = useCallback(
       (options: ExportOptions) => {
@@ -108,7 +140,8 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
       setDragging(true);
     }, []);
 
-    const handleDragLeave = useCallback(() => {
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+      if (e.currentTarget.contains(e.relatedTarget as Node)) return;
       setDragging(false);
     }, []);
 
@@ -121,8 +154,8 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         sx={{
-          width: preset.width * CANVAS_SCALE,
-          height: preset.height * CANVAS_SCALE,
+          width: preset.width * scale,
+          height: preset.height * scale,
           boxShadow: 3,
           borderRadius: 1,
           overflow: 'hidden',
@@ -139,7 +172,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: safeZone.top * CANVAS_SCALE,
+                height: safeZone.top * scale,
                 bgcolor: 'rgba(47, 159, 122, 0.15)',
                 borderBottom: '1px dashed rgba(47, 159, 122, 0.85)',
                 pointerEvents: 'none',
@@ -152,7 +185,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: safeZone.bottom * CANVAS_SCALE,
+                height: safeZone.bottom * scale,
                 bgcolor: 'rgba(47, 159, 122, 0.15)',
                 borderTop: '1px dashed rgba(47, 159, 122, 0.85)',
                 pointerEvents: 'none',
