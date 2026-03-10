@@ -1,5 +1,7 @@
 # MINT
 
+[English](README.md) | [Русский](README.ru.md)
+
 **MINT = Merge Image'N Text** - a tiny browser editor to make social images fast.
 
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -14,13 +16,9 @@ MINT helps you create post/stories visuals with text overlays, export them quick
 
 ## Live Demo
 
-After enabling GitHub Pages, the app will be available at:
+The app is live at:
 
-`https://<your-username>.github.io/<your-repo>/`
-
-For this repository:
-
-`https://<your-username>.github.io/social-posts-heler/`
+**[https://dimagious.github.io/mint/](https://dimagious.github.io/mint/)**
 
 ## Why This Exists
 
@@ -108,14 +106,6 @@ MINT is intentionally simple:
 - no account wall
 - no complex timeline or templates engine
 - fast execution for creators who want to post now
-
-That makes it ideal for side projects, personal brands, and "built-on-a-vacation" stories.
-
-## Roadmap
-
-- Better mobile editing gestures for text positioning.
-- Faster text-edit workflows (quick align, smart spacing, typography suggestions).
-- Optional cloud sync for project files.
 
 ## Support
 
