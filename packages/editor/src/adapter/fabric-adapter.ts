@@ -70,6 +70,7 @@ export class FabricAdapter {
         width: Math.round((obj.width ?? 0) * (obj.scaleX ?? 1)),
         height: Math.round((obj.height ?? 0) * (obj.scaleY ?? 1)),
         rotation: Math.round(obj.angle ?? 0),
+        ...(obj instanceof fabric.Textbox ? { text: obj.text } : {}),
       };
 
       this.onObjectModified?.(layerId, changes);
@@ -294,7 +295,7 @@ export class FabricAdapter {
 
   private applyLayerProps(textbox: fabric.Textbox, layer: TextLayerData): void {
     textbox.set({
-      text: layer.text,
+      ...(textbox.isEditing ? {} : { text: layer.text }),
       left: layer.x,
       top: layer.y,
       width: layer.width,
