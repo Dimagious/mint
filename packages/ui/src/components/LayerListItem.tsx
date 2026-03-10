@@ -48,6 +48,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
         cursor: 'pointer',
         opacity: layer.visible ? 1 : 0.5,
         '&:hover': { bgcolor: 'action.hover' },
+        pr: '160px',
       }}
       secondaryAction={
         <Stack direction="row" spacing={0}>
