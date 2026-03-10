@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" role="img" aria-label="MINT logo">
+  <g fill="none" stroke="#0f8b66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(185 20)">
+      <path d="M55 0C86 18 104 48 104 79C104 110 86 140 55 158C24 140 6 110 6 79C6 48 24 18 55 0Z" />
+      <path d="M55 16V142M55 76L22 44M55 76L88 44M55 104L29 130M55 104L81 130" />
+    </g>
+    <g transform="translate(128 76) rotate(-90 112 79)">
+      <path d="M55 0C86 18 104 48 104 79C104 110 86 140 55 158C24 140 6 110 6 79C6 48 24 18 55 0Z" />
+      <path d="M55 16V142M55 76L22 44M55 76L88 44M55 104L29 130M55 104L81 130" />
+    </g>
+  </g>
+  <text
+    x="320"
+    y="206"
+    text-anchor="middle"
+    font-family="Trebuchet MS, Segoe UI, sans-serif"
+    font-size="98"
+    font-weight="700"
+    fill="#0f8b66"
+    letter-spacing="8"
+  >
+    MINT
+  </text>
+</svg>

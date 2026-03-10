@@ -12,6 +12,7 @@ export type { ExportFormat, ExportOptions } from './types/export';
 export type { LayerAction } from './types/layer-action';
 
 export { CANVAS_PRESETS, getPresetById } from './constants/canvas-presets';
+export { SAFE_ZONES, getSafeZoneByPresetId } from './constants/safe-zones';
 export {
   createDefaultDocument,
   createTextLayer,

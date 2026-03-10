@@ -36,7 +36,10 @@ For this repository:
   - alignment, line height, letter spacing
   - shadow, stroke, and text background fill
 - Layer controls: reorder, lock, hide, duplicate, copy/paste.
-- Text preset library (Hook / Body / CTA) with goal and format filters.
+- Text quick tools:
+  - safe-zone alignment (left/center/right, top/center/bottom)
+  - fit text to layer width
+  - smart contrast (auto text color + stroke)
 - Keyboard shortcuts for faster editing (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Y`, `Delete`, etc.).
 - Autosave to `localStorage`.
 - Project save/load (`.json`).
@@ -44,6 +47,7 @@ For this repository:
 - RU/EN UI switch.
 - **Safe Zones overlay** for social UI cutoffs (great for stories).
 - Mobile-first editing flow (bottom actions + mobile drawers for Layers and Style).
+- Mint green pastel UI theme + branded logo.
 - Visible **Buy Me a Coffee** CTA.
 
 ## Quick Start
@@ -106,7 +110,7 @@ That makes it ideal for side projects, personal brands, and "built-on-a-vacation
 ## Roadmap
 
 - Better mobile editing gestures for text positioning.
-- Preset packs for different niches (SaaS, creator economy, education).
+- Faster text-edit workflows (quick align, smart spacing, typography suggestions).
 - Optional cloud sync for project files.
 
 ## Support

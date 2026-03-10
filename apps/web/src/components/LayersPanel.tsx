@@ -90,7 +90,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
             <Typography variant="caption">{t('layers.bgColor')}</Typography>
             <input
               type="color"
-              value={doc.background.color || '#1a1a2e'}
+              value={doc.background.color || '#e8f5ee'}
               onChange={(e) =>
                 setBackground({ ...doc.background, color: e.target.value })
               }

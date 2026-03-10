@@ -3,7 +3,6 @@
     "undo": "Отменить",
     "redo": "Повторить",
     "addText": "Добавить текст",
-    "presets": "Текстовые пресеты",
     "export": "Экспорт",
     "canvasSize": "Размер холста",
     "donate": "Угостить кофе",
@@ -33,38 +32,6 @@
     "layers": "Слои",
     "properties": "Стиль"
   },
-  "presetsLibrary": {
-    "title": "Текстовые пресеты",
-    "goal": "Цель",
-    "format": "Формат",
-    "category": "Тип блока",
-    "apply": "Применить",
-    "empty": "Для выбранных фильтров пресеты не найдены",
-    "filters": {
-      "all": "Все"
-    },
-    "categories": {
-      "hook": "Хук",
-      "body": "Основа",
-      "cta": "CTA"
-    },
-    "goals": {
-      "reach": "Охват",
-      "engagement": "Вовлечение",
-      "conversion": "Конверсия"
-    },
-    "formats": {
-      "universal": "Универсально",
-      "reel": "Рилс",
-      "carousel": "Карусель",
-      "story": "Сторис"
-    },
-    "tones": {
-      "personal": "Личный",
-      "expert": "Экспертный",
-      "direct": "Прямой"
-    }
-  },
   "style": {
     "text": "Текст",
     "font": "Шрифт",
@@ -81,6 +48,17 @@
     "alignLeft": "По левому краю",
     "alignCenter": "По центру",
     "alignRight": "По правому краю",
+    "quickTools": "Быстрые инструменты",
+    "left": "Слева",
+    "center": "По центру",
+    "right": "Справа",
+    "top": "Сверху",
+    "middle": "Середина",
+    "bottom": "Снизу",
+    "fitToWidth": "Подогнать ширину",
+    "fitting": "Подгонка...",
+    "smartContrast": "Умный контраст",
+    "applyingContrast": "Применение...",
     "lineHeight": "Межстрочный интервал: {{value}}",
     "letterSpacing": "Межбуквенный интервал: {{value}}",
     "shadow": "Тень",

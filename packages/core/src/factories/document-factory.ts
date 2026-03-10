@@ -49,7 +49,7 @@ export function createDefaultDocument(
 ): EditorDocument {
   return {
     presetId,
-    background: { dataUrl: null, fit: 'contain', color: '#1a1a2e' },
+    background: { dataUrl: null, fit: 'contain', color: '#e8f5ee' },
     layers: [],
   };
 }

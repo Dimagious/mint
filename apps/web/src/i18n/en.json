@@ -3,7 +3,6 @@
     "undo": "Undo",
     "redo": "Redo",
     "addText": "Add Text",
-    "presets": "Text Presets",
     "export": "Export",
     "canvasSize": "Canvas Size",
     "donate": "Buy me a coffee",
@@ -33,38 +32,6 @@
     "layers": "Layers",
     "properties": "Style"
   },
-  "presetsLibrary": {
-    "title": "Text Presets",
-    "goal": "Goal",
-    "format": "Format",
-    "category": "Block Type",
-    "apply": "Apply",
-    "empty": "No presets for this filter combination",
-    "filters": {
-      "all": "All"
-    },
-    "categories": {
-      "hook": "Hook",
-      "body": "Body",
-      "cta": "CTA"
-    },
-    "goals": {
-      "reach": "Reach",
-      "engagement": "Engagement",
-      "conversion": "Conversion"
-    },
-    "formats": {
-      "universal": "Universal",
-      "reel": "Reel",
-      "carousel": "Carousel",
-      "story": "Story"
-    },
-    "tones": {
-      "personal": "Personal",
-      "expert": "Expert",
-      "direct": "Direct"
-    }
-  },
   "style": {
     "text": "Text",
     "font": "Font",
@@ -81,6 +48,17 @@
     "alignLeft": "Left",
     "alignCenter": "Center",
     "alignRight": "Right",
+    "quickTools": "Quick Tools",
+    "left": "Left",
+    "center": "Center",
+    "right": "Right",
+    "top": "Top",
+    "middle": "Middle",
+    "bottom": "Bottom",
+    "fitToWidth": "Fit To Width",
+    "fitting": "Fitting...",
+    "smartContrast": "Smart Contrast",
+    "applyingContrast": "Applying...",
     "lineHeight": "Line Height: {{value}}",
     "letterSpacing": "Letter Spacing: {{value}}",
     "shadow": "Shadow",

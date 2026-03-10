@@ -13,12 +13,10 @@ import {
   ToggleButtonGroup,
   Toolbar,
   Tooltip,
-  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import {
-  AutoAwesome,
   CropFree,
   Download,
   FolderOpen,
@@ -34,14 +32,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import type { EditorDocument, ExportOptions } from '@mint/core';
-import { ExportDialog, loadGoogleFont } from '@mint/ui';
+import { ExportDialog } from '@mint/ui';
+import mintBrandLogo from './assets/mint-brand.svg';
 import { CanvasPanel } from './components/CanvasPanel';
 import { LayersPanel } from './components/LayersPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
-import { TextPresetDialog } from './components/TextPresetDialog';
 import { ToolbarSection } from './components/ToolbarSection';
-import { getPresetText, mergePresetStyle } from './content/text-presets';
-import type { PresetLanguage, TextPreset } from './content/text-presets';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/mint';
 
@@ -49,10 +45,9 @@ export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const language: PresetLanguage = i18n.language.startsWith('ru') ? 'ru' : 'en';
+  const language = i18n.language.startsWith('ru') ? 'ru' : 'en';
 
   const [exportOpen, setExportOpen] = useState(false);
-  const [presetsOpen, setPresetsOpen] = useState(false);
   const [showSafeZones, setShowSafeZones] = useState(true);
   const [mobileLayersOpen, setMobileLayersOpen] = useState(false);
   const [mobilePropertiesOpen, setMobilePropertiesOpen] = useState(false);
@@ -204,46 +199,35 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleApplyPreset = useCallback(
-    (preset: TextPreset) => {
-      const style = mergePresetStyle(preset.style);
-      loadGoogleFont(style.fontFamily);
-
-      addTextLayer({
-        text: getPresetText(preset, language),
-        x: preset.placement.x,
-        y: preset.placement.y,
-        width: preset.placement.width,
-        height: preset.placement.height,
-        style,
-      });
-      setPresetsOpen(false);
-      setMobilePropertiesOpen(true);
-    },
-    [addTextLayer, language],
-  );
-
   const handleMobileMenuClose = () => setMobileMenuAnchor(null);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <AppBar position="static" color="default" elevation={1}>
+      <AppBar position="static" color="default" elevation={0}>
         <Toolbar
           variant="dense"
           sx={{
             gap: 1,
-            minHeight: isMobile ? 56 : undefined,
+            minHeight: isMobile ? 58 : undefined,
             flexWrap: isMobile ? 'wrap' : 'nowrap',
-            py: isMobile ? 0.75 : 0,
+            py: isMobile ? 0.75 : 0.5,
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{ mr: isMobile ? 0.5 : 3, color: 'primary.main' }}
+          <Box
             data-testid="app-title"
+            sx={{
+              mr: isMobile ? 0.5 : 2,
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
-            MINT
-          </Typography>
+            <Box
+              component="img"
+              src={mintBrandLogo}
+              alt="MINT logo"
+              sx={{ height: isMobile ? 34 : 44, width: 'auto' }}
+            />
+          </Box>
 
           <ToolbarSection compact={isMobile} />
 
@@ -269,13 +253,14 @@ export const App: React.FC = () => {
                   </span>
                 </Tooltip>
                 <Tooltip title={t('toolbar.addText')}>
-                  <IconButton size="small" onClick={() => addTextLayer()}>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      addTextLayer();
+                      setMobilePropertiesOpen(true);
+                    }}
+                  >
                     <TextFields fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('toolbar.presets')}>
-                  <IconButton size="small" onClick={() => setPresetsOpen(true)}>
-                    <AutoAwesome fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title={t('toolbar.export')}>
@@ -374,14 +359,6 @@ export const App: React.FC = () => {
                   onClick={() => addTextLayer()}
                 >
                   {t('toolbar.addText')}
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AutoAwesome />}
-                  onClick={() => setPresetsOpen(true)}
-                >
-                  {t('toolbar.presets')}
                 </Button>
                 <Button
                   size="small"
@@ -536,13 +513,6 @@ export const App: React.FC = () => {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         onExport={handleExport}
-      />
-
-      <TextPresetDialog
-        open={presetsOpen}
-        language={language}
-        onClose={() => setPresetsOpen(false)}
-        onApply={handleApplyPreset}
       />
     </Box>
   );

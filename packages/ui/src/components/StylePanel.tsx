@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Autocomplete,
   Box,
@@ -15,6 +15,8 @@ import {
   AccordionDetails,
   Switch,
   FormControlLabel,
+  Button,
+  Divider,
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -24,10 +26,23 @@ import { ALL_FONTS, loadGoogleFont } from '../fonts';
 interface StylePanelProps {
   layer: TextLayerData;
   onUpdate: (changes: Partial<Omit<TextLayerData, 'id'>>) => void;
+  onAlignHorizontal?: (position: 'left' | 'center' | 'right') => void;
+  onAlignVertical?: (position: 'top' | 'center' | 'bottom') => void;
+  onFitTextWidth?: () => void | Promise<void>;
+  onSmartContrast?: () => void | Promise<void>;
 }
 
-export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
+export const StylePanel: React.FC<StylePanelProps> = ({
+  layer,
+  onUpdate,
+  onAlignHorizontal,
+  onAlignVertical,
+  onFitTextWidth,
+  onSmartContrast,
+}) => {
   const { t } = useTranslation();
+  const [isFittingText, setIsFittingText] = useState(false);
+  const [isApplyingContrast, setIsApplyingContrast] = useState(false);
   const updateStyle = useCallback(
     (styleChanges: Partial<TextStyle>) => {
       onUpdate({ style: { ...layer.style, ...styleChanges } });
@@ -49,6 +64,118 @@ export const StylePanel: React.FC<StylePanelProps> = ({ layer, onUpdate }) => {
       />
 
       <Stack spacing={2}>
+        {(onAlignHorizontal ||
+          onAlignVertical ||
+          onFitTextWidth ||
+          onSmartContrast) && (
+          <Box
+            sx={{
+              p: 1.25,
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1.5,
+            }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 700 }}>
+              {t('style.quickTools')}
+            </Typography>
+
+            {onAlignHorizontal && (
+              <Stack direction="row" spacing={0.75} sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignHorizontal('left')}
+                >
+                  {t('style.left')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignHorizontal('center')}
+                >
+                  {t('style.center')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignHorizontal('right')}
+                >
+                  {t('style.right')}
+                </Button>
+              </Stack>
+            )}
+
+            {onAlignVertical && (
+              <Stack direction="row" spacing={0.75} sx={{ mt: 0.75 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignVertical('top')}
+                >
+                  {t('style.top')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignVertical('center')}
+                >
+                  {t('style.middle')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onAlignVertical('bottom')}
+                >
+                  {t('style.bottom')}
+                </Button>
+              </Stack>
+            )}
+
+            {(onFitTextWidth || onSmartContrast) && <Divider sx={{ my: 1 }} />}
+
+            {onFitTextWidth && (
+              <Button
+                size="small"
+                variant="contained"
+                disabled={isFittingText}
+                onClick={async () => {
+                  setIsFittingText(true);
+                  try {
+                    await onFitTextWidth();
+                  } finally {
+                    setIsFittingText(false);
+                  }
+                }}
+                sx={{ mr: 1 }}
+              >
+                {isFittingText ? t('style.fitting') : t('style.fitToWidth')}
+              </Button>
+            )}
+
+            {onSmartContrast && (
+              <Button
+                size="small"
+                variant="contained"
+                color="secondary"
+                disabled={isApplyingContrast}
+                onClick={async () => {
+                  setIsApplyingContrast(true);
+                  try {
+                    await onSmartContrast();
+                  } finally {
+                    setIsApplyingContrast(false);
+                  }
+                }}
+              >
+                {isApplyingContrast
+                  ? t('style.applyingContrast')
+                  : t('style.smartContrast')}
+              </Button>
+            )}
+          </Box>
+        )}
+
         <Autocomplete
           size="small"
           options={ALL_FONTS}

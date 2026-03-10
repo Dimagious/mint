@@ -9,7 +9,7 @@ type ModifiedCallback = (
 ) => void;
 
 const SNAP_THRESHOLD = 8;
-const GUIDE_COLOR = '#ff3b6b';
+const GUIDE_COLOR = '#2f9f7a';
 const GUIDE_DASH = [4, 4];
 
 export class FabricAdapter {
@@ -26,7 +26,7 @@ export class FabricAdapter {
     this.canvas = new fabric.Canvas(canvasElement, {
       selection: true,
       preserveObjectStacking: true,
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#e8f5ee',
     });
 
     this.canvas.on('selection:created', (e) => {
@@ -176,7 +176,7 @@ export class FabricAdapter {
     this.syncing = true;
     const preset = getPresetById(doc.presetId);
 
-    this.canvas.backgroundColor = doc.background.color || '#1a1a2e';
+    this.canvas.backgroundColor = doc.background.color || '#e8f5ee';
     this.syncBackground(doc.background.dataUrl, doc.background.fit, preset);
     this.syncLayers(doc.layers);
     this.syncSelection(selectedLayerId);

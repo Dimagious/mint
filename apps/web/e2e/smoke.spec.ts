@@ -22,6 +22,5 @@ test('mobile panels open via bottom actions', async ({ page }) => {
 
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: /add text/i }).click();
-  await page.getByTestId('mobile-properties-button').click();
   await expect(page.getByTestId('properties-panel-mobile')).toBeVisible();
 });
