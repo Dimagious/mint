@@ -8,6 +8,8 @@ type ModifiedCallback = (
   changes: Partial<Omit<TextLayerData, 'id'>>,
 ) => void;
 
+const SCALE_THRESHOLD = 0.001;
+
 const SNAP_THRESHOLD = 8;
 const GUIDE_COLOR = '#2f9f7a';
 const GUIDE_DASH = [4, 4];
@@ -17,6 +19,7 @@ export class FabricAdapter {
   private onSelectionChange: SelectionCallback | null = null;
   private onObjectModified: ModifiedCallback | null = null;
   private objectMap = new Map<string, fabric.FabricObject>();
+  private layerMap = new Map<string, TextLayerData>();
   private backgroundImage: fabric.FabricImage | null = null;
   private syncing = false;
   private guideLines: fabric.Line[] = [];
@@ -64,16 +67,38 @@ export class FabricAdapter {
       const layerId = this.getLayerIdFromObject(obj);
       if (!layerId) return;
 
-      const changes: Partial<Omit<TextLayerData, 'id'>> = {
+      const scaleX = obj.scaleX ?? 1;
+      const scaleY = obj.scaleY ?? 1;
+      const isCornerResize =
+        Math.abs(scaleX - 1) > SCALE_THRESHOLD ||
+        Math.abs(scaleY - 1) > SCALE_THRESHOLD;
+
+      const baseChanges: Partial<Omit<TextLayerData, 'id'>> = {
         x: Math.round(obj.left ?? 0),
         y: Math.round(obj.top ?? 0),
-        width: Math.round((obj.width ?? 0) * (obj.scaleX ?? 1)),
-        height: Math.round((obj.height ?? 0) * (obj.scaleY ?? 1)),
+        width: Math.round((obj.width ?? 0) * scaleX),
+        height: Math.round((obj.height ?? 0) * scaleY),
         rotation: Math.round(obj.angle ?? 0),
         ...(obj instanceof fabric.Textbox ? { text: obj.text } : {}),
       };
 
-      this.onObjectModified?.(layerId, changes);
+      // Corner resize: scale font size proportionally, reset transform scale
+      if (isCornerResize && obj instanceof fabric.Textbox) {
+        const layer = this.layerMap.get(layerId);
+        if (layer) {
+          const newFontSize = Math.max(
+            6,
+            Math.round(layer.style.fontSize * scaleX),
+          );
+          this.onObjectModified?.(layerId, {
+            ...baseChanges,
+            style: { ...layer.style, fontSize: newFontSize },
+          });
+          return;
+        }
+      }
+
+      this.onObjectModified?.(layerId, baseChanges);
     });
   }
 
@@ -262,10 +287,12 @@ export class FabricAdapter {
       if (!currentIds.has(id)) {
         this.canvas.remove(obj);
         this.objectMap.delete(id);
+        this.layerMap.delete(id);
       }
     }
 
     layers.forEach((layer, index) => {
+      this.layerMap.set(layer.id, layer);
       let obj = this.objectMap.get(layer.id);
 
       if (!obj) {
@@ -301,7 +328,7 @@ export class FabricAdapter {
       width: layer.width,
       angle: layer.rotation,
       scaleX: 1,
-      scaleY: layer.height / (textbox.height || 1),
+      scaleY: 1,
       fontFamily: layer.style.fontFamily,
       fontSize: layer.style.fontSize,
       fontWeight: layer.style.fontWeight as string | number,
@@ -404,6 +431,7 @@ export class FabricAdapter {
     this.clearGuideLines();
     this.canvas.dispose();
     this.objectMap.clear();
+    this.layerMap.clear();
     this.backgroundImage = null;
     this.currentPreset = null;
   }
