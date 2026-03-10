@@ -1,10 +1,6 @@
-import type { CanvasPresetId } from '../types/canvas-preset';
 import type { ExportFormat } from '../types/export';
 
-export function generateExportFilename(
-  presetId: CanvasPresetId,
-  format: ExportFormat,
-): string {
+export function generateExportFilename(format: ExportFormat): string {
   const timestamp = new Date()
     .toISOString()
     .replace(/[:.]/g, '-')

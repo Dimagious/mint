@@ -217,7 +217,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       );
     });
 
-    const filename = generateExportFilename(doc.presetId, options.format);
+    const filename = generateExportFilename(options.format);
     const url = URL.createObjectURL(blob);
     const a = window.document.createElement('a');
     a.href = url;

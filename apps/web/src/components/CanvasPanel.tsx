@@ -81,7 +81,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
 
         const link = window.document.createElement('a');
         link.href = dataUrl;
-        link.download = generateExportFilename(doc.presetId, options.format);
+        link.download = generateExportFilename(options.format);
         window.document.body.appendChild(link);
         link.click();
         window.document.body.removeChild(link);
