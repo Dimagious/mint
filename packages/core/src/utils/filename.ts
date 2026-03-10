@@ -11,5 +11,5 @@ export function generateExportFilename(
     .replace('T', '_')
     .slice(0, 19);
   const ext = format === 'jpeg' ? 'jpg' : 'png';
-  return `dy-captionforge_${presetId}_${timestamp}.${ext}`;
+  return `mint_${timestamp}.${ext}`;
 }
