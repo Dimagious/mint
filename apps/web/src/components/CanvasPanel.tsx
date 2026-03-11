@@ -163,7 +163,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
           position: 'relative',
         }}
       >
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} aria-label={t('canvas.ariaLabel')} role="img" />
         {safeZone && (
           <>
             <Box

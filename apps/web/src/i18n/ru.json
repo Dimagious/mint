@@ -15,6 +15,7 @@
   "layers": {
     "background": "Фон",
     "uploadImage": "Загрузить изображение",
+    "uploading": "Загрузка...",
     "removeImage": "Убрать изображение",
     "fitCover": "Режим: Обрезать",
     "fitContain": "Режим: Вписать",
@@ -23,11 +24,19 @@
     "emptyText": "Пустой текст",
     "emptyHint": "Нажмите «Добавить» чтобы создать слой",
     "bgColor": "Цвет холста",
-    "bgColorHint": "Цвет холста виден только там, где изображение не перекрывает фон."
+    "bgColorHint": "Цвет холста виден только там, где изображение не перекрывает фон.",
+    "ariaUp": "Переместить слой вверх",
+    "ariaDown": "Переместить слой вниз",
+    "ariaHide": "Скрыть слой",
+    "ariaShow": "Показать слой",
+    "ariaLock": "Заблокировать слой",
+    "ariaUnlock": "Разблокировать слой",
+    "ariaDelete": "Удалить слой"
   },
   "canvas": {
     "dropImage": "Перетащите изображение сюда",
-    "safeZoneHint": "Держите важный текст в центре"
+    "safeZoneHint": "Держите важный текст в центре",
+    "ariaLabel": "Холст редактора"
   },
   "properties": {
     "title": "Свойства",
@@ -35,11 +44,13 @@
   },
   "mobile": {
     "layers": "Слои",
-    "properties": "Стиль"
+    "properties": "Стиль",
+    "noLayerSelected": "Сначала выберите слой"
   },
   "style": {
     "text": "Текст",
     "font": "Шрифт",
+    "fontSizeLabel": "Размер шрифта",
     "fontSize": "Размер шрифта: {{size}}",
     "weight": "Насыщенность",
     "weightLight": "Тонкий",
@@ -74,7 +85,8 @@
     "shadowBlur": "Размытие: {{value}}",
     "strokeWidth": "Толщина: {{value}}",
     "background": "Заливка фона",
-    "bgPadding": "Отступ: {{value}}"
+    "bgPadding": "Отступ: {{value}}",
+    "settingEnabled": "включено"
   },
   "export": {
     "title": "Экспорт изображения",
@@ -85,7 +97,8 @@
   },
   "errors": {
     "invalidFile": "Неверный формат файла проекта",
-    "exportFailed": "Экспорт не удался: холст не готов"
+    "exportFailed": "Экспорт не удался: холст не готов",
+    "nothingToPaste": "Нечего вставить — сначала скопируйте слой"
   },
   "presets": {
     "square": "Квадрат",

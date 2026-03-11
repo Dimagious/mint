@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Autocomplete,
   Box,
@@ -74,6 +74,32 @@ export const StylePanel: React.FC<StylePanelProps> = ({
   const { t } = useTranslation();
   const [isFittingText, setIsFittingText] = useState(false);
   const [isApplyingContrast, setIsApplyingContrast] = useState(false);
+
+  // Debounced text field — local state leads the store by ~150ms
+  const [localText, setLocalText] = useState(layer.text);
+  const textDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  // Sync when the selected layer changes (different id) or external edits
+  useEffect(() => {
+    setLocalText(layer.text);
+  }, [layer.id, layer.text]);
+
+  useEffect(() => {
+    return () => clearTimeout(textDebounceRef.current);
+  }, []);
+
+  const handleTextChange = useCallback((value: string) => {
+    setLocalText(value);
+    clearTimeout(textDebounceRef.current);
+    textDebounceRef.current = setTimeout(() => {
+      onUpdateRef.current({ text: value });
+    }, 150);
+  }, []);
+
   const updateStyle = useCallback(
     (styleChanges: Partial<TextStyle>) => {
       onUpdate({ style: { ...layer.style, ...styleChanges } });
@@ -81,12 +107,27 @@ export const StylePanel: React.FC<StylePanelProps> = ({
     [layer.style, onUpdate],
   );
 
+  const activeDot = (
+    <Box
+      component="span"
+      role="status"
+      aria-label={t('style.settingEnabled')}
+      sx={{
+        width: 7,
+        height: 7,
+        borderRadius: '50%',
+        bgcolor: 'primary.main',
+        flexShrink: 0,
+      }}
+    />
+  );
+
   return (
     <Box sx={{ p: 1 }}>
       <TextField
         label={t('style.text')}
-        value={layer.text}
-        onChange={(e) => onUpdate({ text: e.target.value })}
+        value={localText}
+        onChange={(e) => handleTextChange(e.target.value)}
         multiline
         rows={2}
         fullWidth
@@ -252,9 +293,36 @@ export const StylePanel: React.FC<StylePanelProps> = ({
         />
 
         <Box>
-          <Typography variant="caption">
-            {t('style.fontSize', { size: layer.style.fontSize })}
-          </Typography>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 0.25 }}
+          >
+            <Typography variant="caption">
+              {t('style.fontSizeLabel')}
+            </Typography>
+            <TextField
+              type="number"
+              size="small"
+              value={layer.style.fontSize}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v) && v >= 8 && v <= 800)
+                  updateStyle({ fontSize: v });
+              }}
+              inputProps={{ min: 8, max: 800 }}
+              sx={{
+                width: 64,
+                '& input': {
+                  py: 0.25,
+                  px: 0.5,
+                  textAlign: 'right',
+                  fontSize: '0.75rem',
+                },
+              }}
+            />
+          </Stack>
           <Slider
             value={layer.style.fontSize}
             min={8}
@@ -282,8 +350,15 @@ export const StylePanel: React.FC<StylePanelProps> = ({
         </FormControl>
 
         <Box>
-          <Typography variant="caption">{t('style.color')}</Typography>
+          <Typography
+            component="label"
+            htmlFor="style-color-input"
+            variant="caption"
+          >
+            {t('style.color')}
+          </Typography>
           <input
+            id="style-color-input"
             type="color"
             value={layer.style.color}
             onChange={(e) => updateStyle({ color: e.target.value })}
@@ -292,6 +367,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               height: 32,
               border: 'none',
               cursor: 'pointer',
+              display: 'block',
             }}
           />
         </Box>
@@ -351,9 +427,9 @@ export const StylePanel: React.FC<StylePanelProps> = ({
           </Typography>
           <Slider
             value={layer.style.letterSpacing}
-            min={-5}
-            max={20}
-            step={0.5}
+            min={-20}
+            max={100}
+            step={1}
             onChange={(_, v) => updateStyle({ letterSpacing: v as number })}
             size="small"
           />
@@ -366,18 +442,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
             >
               {t('style.shadow')}
-              {layer.style.shadow !== null && (
-                <Box
-                  component="span"
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                    flexShrink: 0,
-                  }}
-                />
-              )}
+              {layer.style.shadow !== null && activeDot}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -464,8 +529,15 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   />
                 </Box>
                 <Box>
-                  <Typography variant="caption">{t('style.color')}</Typography>
+                  <Typography
+                    component="label"
+                    htmlFor="shadow-color-input"
+                    variant="caption"
+                  >
+                    {t('style.color')}
+                  </Typography>
                   <input
+                    id="shadow-color-input"
                     type="color"
                     value={normalizeColorForInput(
                       layer.style.shadow.color,
@@ -484,6 +556,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                       height: 28,
                       border: 'none',
                       cursor: 'pointer',
+                      display: 'block',
                     }}
                   />
                 </Box>
@@ -499,18 +572,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
             >
               {t('style.stroke')}
-              {layer.style.stroke !== null && (
-                <Box
-                  component="span"
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                    flexShrink: 0,
-                  }}
-                />
-              )}
+              {layer.style.stroke !== null && activeDot}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -557,8 +619,15 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                   />
                 </Box>
                 <Box>
-                  <Typography variant="caption">{t('style.color')}</Typography>
+                  <Typography
+                    component="label"
+                    htmlFor="stroke-color-input"
+                    variant="caption"
+                  >
+                    {t('style.color')}
+                  </Typography>
                   <input
+                    id="stroke-color-input"
                     type="color"
                     value={layer.style.stroke.color}
                     onChange={(e) =>
@@ -574,6 +643,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                       height: 28,
                       border: 'none',
                       cursor: 'pointer',
+                      display: 'block',
                     }}
                   />
                 </Box>
@@ -589,18 +659,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
             >
               {t('style.background')}
-              {layer.style.background !== null && (
-                <Box
-                  component="span"
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                    flexShrink: 0,
-                  }}
-                />
-              )}
+              {layer.style.background !== null && activeDot}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -629,8 +688,15 @@ export const StylePanel: React.FC<StylePanelProps> = ({
             {layer.style.background && (
               <Stack spacing={1} sx={{ mt: 1 }}>
                 <Box>
-                  <Typography variant="caption">{t('style.color')}</Typography>
+                  <Typography
+                    component="label"
+                    htmlFor="bg-color-input"
+                    variant="caption"
+                  >
+                    {t('style.color')}
+                  </Typography>
                   <input
+                    id="bg-color-input"
                     type="color"
                     value={normalizeColorForInput(
                       layer.style.background.color,
@@ -649,6 +715,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                       height: 28,
                       border: 'none',
                       cursor: 'pointer',
+                      display: 'block',
                     }}
                   />
                 </Box>

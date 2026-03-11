@@ -9,6 +9,7 @@ import {
   ArrowUpward,
   ArrowDownward,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import type { TextLayerData } from '@mint/core';
 
 interface LayerListItemProps {
@@ -38,6 +39,8 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
   isLast,
   emptyText = 'Empty text',
 }) => {
+  const { t } = useTranslation();
+
   return (
     <ListItem
       onClick={onSelect}
@@ -54,26 +57,31 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
         <Stack direction="row" spacing={0}>
           <IconButton
             size="small"
+            aria-label={t('layers.ariaUp')}
             onClick={(e) => {
               e.stopPropagation();
               onMoveUp();
             }}
-            disabled={isLast}
+            disabled={isLast || layer.locked}
           >
             <ArrowUpward fontSize="small" />
           </IconButton>
           <IconButton
             size="small"
+            aria-label={t('layers.ariaDown')}
             onClick={(e) => {
               e.stopPropagation();
               onMoveDown();
             }}
-            disabled={isFirst}
+            disabled={isFirst || layer.locked}
           >
             <ArrowDownward fontSize="small" />
           </IconButton>
           <IconButton
             size="small"
+            aria-label={
+              layer.visible ? t('layers.ariaHide') : t('layers.ariaShow')
+            }
             onClick={(e) => {
               e.stopPropagation();
               onToggleVisibility();
@@ -87,6 +95,9 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
           </IconButton>
           <IconButton
             size="small"
+            aria-label={
+              layer.locked ? t('layers.ariaUnlock') : t('layers.ariaLock')
+            }
             onClick={(e) => {
               e.stopPropagation();
               onToggleLock();
@@ -100,11 +111,13 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
           </IconButton>
           <IconButton
             size="small"
+            aria-label={t('layers.ariaDelete')}
+            disabled={layer.locked}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
-            sx={{ '&:hover': { color: 'error.main' } }}
+            sx={{ '&:hover:not(:disabled)': { color: 'error.main' } }}
           >
             <Delete fontSize="small" />
           </IconButton>

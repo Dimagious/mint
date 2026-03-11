@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Box,
+  CircularProgress,
   Typography,
   List,
   Button,
@@ -22,6 +23,7 @@ interface LayersPanelProps {
 
 export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
   const { t } = useTranslation();
+  const [isUploading, setIsUploading] = useState(false);
   const doc = useEditorStore((s) => s.document);
   const selectedLayerId = useEditorStore((s) => s.selectedLayerId);
   const selectLayer = useEditorStore((s) => s.selectLayer);
@@ -35,9 +37,14 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      const dataUrl = await readFileAsDataUrl(file);
-      setBackground({ ...doc.background, dataUrl });
-      e.target.value = '';
+      setIsUploading(true);
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        setBackground({ ...doc.background, dataUrl });
+      } finally {
+        setIsUploading(false);
+        e.target.value = '';
+      }
     },
     [setBackground, doc.background],
   );
@@ -68,10 +75,17 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
             component="label"
             size="small"
             variant="outlined"
-            startIcon={<Image />}
+            startIcon={
+              isUploading ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <Image />
+              )
+            }
             fullWidth
+            disabled={isUploading}
           >
-            {t('layers.uploadImage')}
+            {isUploading ? t('layers.uploading') : t('layers.uploadImage')}
             <input
               type="file"
               hidden

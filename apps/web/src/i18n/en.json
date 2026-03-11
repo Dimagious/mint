@@ -15,6 +15,7 @@
   "layers": {
     "background": "Background",
     "uploadImage": "Upload Image",
+    "uploading": "Uploading...",
     "removeImage": "Clear Image",
     "fitCover": "Mode: Crop",
     "fitContain": "Mode: Fit",
@@ -23,11 +24,19 @@
     "emptyText": "Empty text",
     "emptyHint": "Click «Add» to create a layer",
     "bgColor": "Canvas Color",
-    "bgColorHint": "Canvas color is visible in areas not covered by the image."
+    "bgColorHint": "Canvas color is visible in areas not covered by the image.",
+    "ariaUp": "Move layer up",
+    "ariaDown": "Move layer down",
+    "ariaHide": "Hide layer",
+    "ariaShow": "Show layer",
+    "ariaLock": "Lock layer",
+    "ariaUnlock": "Unlock layer",
+    "ariaDelete": "Delete layer"
   },
   "canvas": {
     "dropImage": "Drop image here",
-    "safeZoneHint": "Keep key text in the middle area"
+    "safeZoneHint": "Keep key text in the middle area",
+    "ariaLabel": "Design canvas"
   },
   "properties": {
     "title": "Properties",
@@ -35,11 +44,13 @@
   },
   "mobile": {
     "layers": "Layers",
-    "properties": "Style"
+    "properties": "Style",
+    "noLayerSelected": "Select a layer first"
   },
   "style": {
     "text": "Text",
     "font": "Font",
+    "fontSizeLabel": "Font Size",
     "fontSize": "Font Size: {{size}}",
     "weight": "Weight",
     "weightLight": "Light",
@@ -74,7 +85,8 @@
     "shadowBlur": "Blur: {{value}}",
     "strokeWidth": "Width: {{value}}",
     "background": "Background Fill",
-    "bgPadding": "Padding: {{value}}"
+    "bgPadding": "Padding: {{value}}",
+    "settingEnabled": "enabled"
   },
   "export": {
     "title": "Export Image",
@@ -85,7 +97,8 @@
   },
   "errors": {
     "invalidFile": "Invalid project file format",
-    "exportFailed": "Export failed: canvas not ready"
+    "exportFailed": "Export failed: canvas not ready",
+    "nothingToPaste": "Nothing to paste — copy a layer first"
   },
   "presets": {
     "square": "Square",
