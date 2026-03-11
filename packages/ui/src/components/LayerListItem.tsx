@@ -8,6 +8,7 @@ import {
   Delete,
   ArrowUpward,
   ArrowDownward,
+  ContentCopy,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { TextLayerData } from '@mint/core';
@@ -17,6 +18,7 @@ interface LayerListItemProps {
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onToggleVisibility: () => void;
   onToggleLock: () => void;
   onMoveUp: () => void;
@@ -31,6 +33,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
   isSelected,
   onSelect,
   onDelete,
+  onDuplicate,
   onToggleVisibility,
   onToggleLock,
   onMoveUp,
@@ -51,7 +54,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
         cursor: 'pointer',
         opacity: layer.visible ? 1 : 0.5,
         '&:hover': { bgcolor: 'action.hover' },
-        pr: '160px',
+        pr: '196px',
       }}
       secondaryAction={
         <Stack direction="row" spacing={0}>
@@ -108,6 +111,16 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
             ) : (
               <LockOpen fontSize="small" />
             )}
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label={t('layers.ariaDuplicate')}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate();
+            }}
+          >
+            <ContentCopy fontSize="small" />
           </IconButton>
           <IconButton
             size="small"

@@ -31,6 +31,7 @@
     "ariaShow": "Показать слой",
     "ariaLock": "Заблокировать слой",
     "ariaUnlock": "Разблокировать слой",
+    "ariaDuplicate": "Дублировать слой",
     "ariaDelete": "Удалить слой"
   },
   "canvas": {

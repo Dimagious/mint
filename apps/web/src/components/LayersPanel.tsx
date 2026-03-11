@@ -31,6 +31,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
   const removeTextLayer = useEditorStore((s) => s.removeTextLayer);
   const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
   const reorderLayer = useEditorStore((s) => s.reorderLayer);
+  const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
   const setBackground = useEditorStore((s) => s.setBackground);
 
   const handleImageUpload = useCallback(
@@ -187,6 +188,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
               isSelected={layer.id === selectedLayerId}
               onSelect={() => selectLayer(layer.id)}
               onDelete={() => removeTextLayer(layer.id)}
+              onDuplicate={() => duplicateLayer(layer.id)}
               onToggleVisibility={() =>
                 updateTextLayer(layer.id, { visible: !layer.visible })
               }
