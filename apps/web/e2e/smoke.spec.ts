@@ -7,7 +7,9 @@ test('app loads and shows MINT title', async ({ page }) => {
 
 test('can add text layer', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /add text/i }).click();
+  // First-run empty-state CTA is the natural entry point; use its testid to
+  // disambiguate from the top-bar and mobile-bar "Add Text" buttons.
+  await page.getByTestId('empty-cta-add-text').click();
   await expect(
     page.getByTestId('layers-panel').getByText('New Text'),
   ).toBeVisible();
@@ -21,6 +23,9 @@ test('mobile panels open via bottom actions', async ({ page }) => {
   await expect(page.getByTestId('layers-panel-mobile')).toBeVisible();
 
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: /add text/i }).click();
+  // Add a layer via the empty-state CTA, then the properties button becomes
+  // enabled — confirms the mobile properties drawer opens.
+  await page.getByTestId('empty-cta-add-text').click();
+  await page.getByTestId('mobile-properties-button').click();
   await expect(page.getByTestId('properties-panel-mobile')).toBeVisible();
 });
