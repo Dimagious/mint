@@ -3,6 +3,7 @@ export { AddTextLayerCommand } from './commands/add-text-layer-command';
 export { RemoveTextLayerCommand } from './commands/remove-text-layer-command';
 export { UpdateTextLayerCommand } from './commands/update-text-layer-command';
 export { ReorderLayerCommand } from './commands/reorder-layer-command';
+export { ReorderLayerToIndexCommand } from './commands/reorder-layer-to-index-command';
 export { SetBackgroundCommand } from './commands/set-background-command';
 export { ChangePresetCommand } from './commands/change-preset-command';
 export { CommandHistory } from './commands/command-history';
