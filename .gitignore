@@ -10,3 +10,6 @@ playwright-report/
 .env.local
 .DS_Store
 *.log
+
+# Design handoff scratch folder (do not commit)
+/Mint/
