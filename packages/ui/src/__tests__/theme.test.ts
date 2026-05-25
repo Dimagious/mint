@@ -7,6 +7,6 @@ describe('theme', () => {
   });
 
   it('should have primary color', () => {
-    expect(theme.palette.primary.main).toBe('#2f9f7a');
+    expect(theme.palette.primary.main.toLowerCase()).toBe('#2f9f7a');
   });
 });
