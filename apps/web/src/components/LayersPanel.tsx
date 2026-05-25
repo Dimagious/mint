@@ -1,29 +1,48 @@
 import React, { useCallback, useState } from 'react';
 import {
   Box,
-  CircularProgress,
-  Typography,
-  List,
   Button,
+  CircularProgress,
+  List,
+  ListItem,
   Paper,
   Stack,
-  ListItem,
+  Switch,
+  Typography,
 } from '@mui/material';
-import { Add, HideImage, Image } from '@mui/icons-material';
+import {
+  Add,
+  FileUpload,
+  ImageOutlined,
+  HideImageOutlined,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import { LayerListItem } from '@mint/ui';
 import { readFileAsDataUrl } from '@mint/utils';
 
-const PANEL_WIDTH = 260;
+const PANEL_WIDTH = 280;
 
 interface LayersPanelProps {
   mobile?: boolean;
+  /** Used by the desktop top bar safe-zones toggle when it lives here (BRIEF §4.2 §3). */
+  showSafeZones?: boolean;
+  onToggleSafeZones?: (v: boolean) => void;
 }
 
-export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
+/**
+ * Left panel — Canvas & Layers (BRIEF §4.2).
+ *
+ * Merges the old "Background" and "Layers" panels into one panel with three
+ * collapsible-style sections: Canvas, Layers, View.
+ */
+export const LayersPanel: React.FC<LayersPanelProps> = ({
+  mobile = false,
+  showSafeZones,
+  onToggleSafeZones,
+}) => {
   const { t } = useTranslation();
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const doc = useEditorStore((s) => s.document);
   const selectedLayerId = useEditorStore((s) => s.selectedLayerId);
   const selectLayer = useEditorStore((s) => s.selectLayer);
@@ -34,176 +53,311 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({ mobile = false }) => {
   const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
   const setBackground = useEditorStore((s) => s.setBackground);
 
-  const handleImageUpload = useCallback(
+  const onUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      setIsUploading(true);
+      setUploading(true);
       try {
         const dataUrl = await readFileAsDataUrl(file);
         setBackground({ ...doc.background, dataUrl });
       } finally {
-        setIsUploading(false);
+        setUploading(false);
         e.target.value = '';
       }
     },
     [setBackground, doc.background],
   );
 
-  const reversedLayers = [...doc.layers].reverse();
+  const reversed = [...doc.layers].reverse();
 
   return (
     <Paper
+      elevation={0}
       data-testid={mobile ? 'layers-panel-mobile' : 'layers-panel'}
       sx={{
         width: mobile ? '100%' : PANEL_WIDTH,
         minWidth: mobile ? 0 : PANEL_WIDTH,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 0,
         borderRight: mobile ? 0 : 1,
         borderColor: 'divider',
-        height: '100%',
+        bgcolor: 'background.paper',
+        overflowY: 'auto',
       }}
-      elevation={0}
     >
-      <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          {t('layers.background')}
-        </Typography>
-        <Stack spacing={0.5}>
-          <Button
-            component="label"
-            size="small"
-            variant="outlined"
-            startIcon={
-              isUploading ? (
-                <CircularProgress size={14} color="inherit" />
-              ) : (
-                <Image />
-              )
-            }
-            fullWidth
-            disabled={isUploading}
-          >
-            {isUploading ? t('layers.uploading') : t('layers.uploadImage')}
-            <input
-              type="file"
-              hidden
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageUpload}
-              data-testid="bg-upload"
-            />
-          </Button>
-          {doc.background.dataUrl && (
-            <Stack direction="row" spacing={0.5}>
-              <Button
-                size="small"
-                fullWidth
-                onClick={() =>
-                  setBackground({
-                    ...doc.background,
-                    fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
-                  })
-                }
-              >
-                {doc.background.fit === 'cover'
-                  ? t('layers.fitCover')
-                  : t('layers.fitContain')}
-              </Button>
-              <Button
-                size="small"
-                fullWidth
-                color="inherit"
-                startIcon={<HideImage />}
-                onClick={() =>
-                  setBackground({
-                    ...doc.background,
-                    dataUrl: null,
-                  })
-                }
-              >
-                {t('layers.removeImage')}
-              </Button>
-            </Stack>
+      {/* ─── Canvas section ─── */}
+      <Section title={t('layers.canvas')}>
+        <Box
+          component="label"
+          sx={(theme) => ({
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.75,
+            minHeight: 116,
+            px: 1.5,
+            py: 1.75,
+            border: `1.5px dashed ${theme.palette.divider}`,
+            borderRadius: '12px',
+            bgcolor: theme.palette.background.default,
+            color: theme.palette.text.secondary,
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'border-color .15s, background .15s, color .15s',
+            '&:hover': {
+              borderColor: theme.palette.primary.main,
+              background: theme.palette.secondary.main,
+              color: theme.palette.primary.dark,
+            },
+          })}
+        >
+          {uploading ? (
+            <CircularProgress size={20} />
+          ) : (
+            <FileUpload sx={{ fontSize: 22 }} />
           )}
-          <Box>
-            <Typography variant="caption">{t('layers.bgColor')}</Typography>
-            <input
-              type="color"
-              value={doc.background.color || '#e8f5ee'}
-              onChange={(e) =>
-                setBackground({ ...doc.background, color: e.target.value })
-              }
-              style={{
-                width: '100%',
-                height: 28,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            />
-            {doc.background.dataUrl && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mt: 0.25 }}
-              >
-                {t('layers.bgColorHint')}
-              </Typography>
-            )}
-          </Box>
-        </Stack>
-      </Box>
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.primary', fontWeight: 600 }}
+          >
+            {uploading ? t('layers.uploading') : t('layers.uploadImage')}
+          </Typography>
+          {!uploading && (
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.disabled', whiteSpace: 'nowrap' }}
+            >
+              {t('layers.uploadHint')}
+            </Typography>
+          )}
+          <input
+            type="file"
+            hidden
+            accept="image/jpeg,image/png,image/webp"
+            onChange={onUpload}
+            data-testid="bg-upload"
+          />
+        </Box>
 
+        {doc.background.dataUrl && (
+          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+            <Button
+              size="small"
+              fullWidth
+              startIcon={<ImageOutlined />}
+              onClick={() =>
+                setBackground({
+                  ...doc.background,
+                  fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
+                })
+              }
+            >
+              {doc.background.fit === 'cover'
+                ? t('layers.fitCover')
+                : t('layers.fitContain')}
+            </Button>
+            <Button
+              size="small"
+              fullWidth
+              color="error"
+              startIcon={<HideImageOutlined />}
+              onClick={() =>
+                setBackground({ ...doc.background, dataUrl: null })
+              }
+            >
+              {t('layers.removeImage')}
+            </Button>
+          </Stack>
+        )}
+
+        <Box sx={{ mt: 1.75 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+            {t('layers.bgColor')}
+          </Typography>
+          <input
+            type="color"
+            value={doc.background.color || '#e8f5ee'}
+            onChange={(e) =>
+              setBackground({ ...doc.background, color: e.target.value })
+            }
+            style={{
+              width: '100%',
+              height: 32,
+              padding: 0,
+              border: '1px solid rgba(0,0,0,.07)',
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}
+          />
+          {doc.background.dataUrl && (
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', mt: 0.5, color: 'text.disabled' }}
+            >
+              {t('layers.bgColorHint')}
+            </Typography>
+          )}
+        </Box>
+      </Section>
+
+      {/* ─── Layers section ─── */}
+      <Section
+        title={t('layers.title')}
+        badge={String(doc.layers.length)}
+        action={
+          <Button
+            size="small"
+            startIcon={<Add sx={{ fontSize: 16 }} />}
+            onClick={() => addTextLayer()}
+            sx={{
+              color: 'primary.dark',
+              '&:hover': { background: 'secondary.main' },
+            }}
+            data-testid="layers-add"
+          >
+            {t('layers.add')}
+          </Button>
+        }
+      >
+        {reversed.length === 0 ? (
+          <EmptyLayersHint />
+        ) : (
+          <List sx={{ p: 0 }}>
+            {reversed.map((layer, visualIndex) => {
+              const actualIndex = doc.layers.length - 1 - visualIndex;
+              return (
+                <LayerListItem
+                  key={layer.id}
+                  layer={layer}
+                  isSelected={layer.id === selectedLayerId}
+                  onSelect={() => selectLayer(layer.id)}
+                  onDelete={() => removeTextLayer(layer.id)}
+                  onDuplicate={() => duplicateLayer(layer.id)}
+                  onToggleVisibility={() =>
+                    updateTextLayer(layer.id, { visible: !layer.visible })
+                  }
+                  onToggleLock={() =>
+                    updateTextLayer(layer.id, { locked: !layer.locked })
+                  }
+                  onMoveUp={() => reorderLayer(layer.id, 'up')}
+                  onMoveDown={() => reorderLayer(layer.id, 'down')}
+                  isFirst={actualIndex === 0}
+                  isLast={actualIndex === doc.layers.length - 1}
+                  emptyText={t('layers.emptyText')}
+                />
+              );
+            })}
+          </List>
+        )}
+      </Section>
+
+      {/* ─── View section ─── */}
+      {onToggleSafeZones && (
+        <Section title={t('layers.view')}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {t('toolbar.safeZones')}
+            </Typography>
+            <Switch
+              size="small"
+              checked={!!showSafeZones}
+              onChange={(e) => onToggleSafeZones(e.target.checked)}
+              inputProps={{ 'aria-label': t('toolbar.safeZones') }}
+            />
+          </Stack>
+        </Section>
+      )}
+    </Paper>
+  );
+};
+
+/* ─────────── Internal building blocks ─────────── */
+
+const Section: React.FC<{
+  title: string;
+  badge?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, badge, action, children }) => (
+  <Box
+    sx={{
+      px: 2,
+      py: 2.25,
+      borderBottom: 1,
+      borderColor: 'divider',
+      '&:last-child': { borderBottom: 0 },
+    }}
+  >
+    <Stack direction="row" alignItems="center" sx={{ mb: 1.25 }}>
+      <Typography variant="subtitle2">
+        {title}
+        {badge != null && (
+          <Box
+            component="span"
+            sx={{
+              ml: 1,
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: '0.04em',
+              textTransform: 'none',
+              bgcolor: 'background.default',
+              color: 'text.secondary',
+              borderRadius: '999px',
+              px: 0.875,
+              py: '1px',
+            }}
+          >
+            {badge}
+          </Box>
+        )}
+      </Typography>
+      {action && <Box sx={{ ml: 'auto' }}>{action}</Box>}
+    </Stack>
+    {children}
+  </Box>
+);
+
+const EmptyLayersHint: React.FC = () => {
+  const { t } = useTranslation();
+  return (
+    <ListItem
+      disableGutters
+      sx={{ display: 'block', textAlign: 'center', py: 2.5, px: 2 }}
+    >
       <Box
         sx={{
-          p: 1.5,
+          mx: 'auto',
+          mb: 1.25,
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          bgcolor: 'secondary.main',
+          color: 'primary.dark',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: 1,
-          borderColor: 'divider',
+          justifyContent: 'center',
         }}
+        aria-hidden
       >
-        <Typography variant="subtitle2">{t('layers.title')}</Typography>
-        <Button size="small" startIcon={<Add />} onClick={() => addTextLayer()}>
-          {t('layers.add')}
-        </Button>
+        <Add fontSize="small" />
       </Box>
-
-      <List sx={{ flex: 1, overflow: 'auto', p: 0.5 }}>
-        {reversedLayers.length === 0 && (
-          <ListItem>
-            <Typography variant="body2" color="text.secondary">
-              {t('layers.emptyHint')}
-            </Typography>
-          </ListItem>
-        )}
-        {reversedLayers.map((layer, visualIndex) => {
-          const actualIndex = doc.layers.length - 1 - visualIndex;
-          return (
-            <LayerListItem
-              key={layer.id}
-              layer={layer}
-              isSelected={layer.id === selectedLayerId}
-              onSelect={() => selectLayer(layer.id)}
-              onDelete={() => removeTextLayer(layer.id)}
-              onDuplicate={() => duplicateLayer(layer.id)}
-              onToggleVisibility={() =>
-                updateTextLayer(layer.id, { visible: !layer.visible })
-              }
-              onToggleLock={() =>
-                updateTextLayer(layer.id, { locked: !layer.locked })
-              }
-              onMoveUp={() => reorderLayer(layer.id, 'up')}
-              onMoveDown={() => reorderLayer(layer.id, 'down')}
-              isFirst={actualIndex === 0}
-              isLast={actualIndex === doc.layers.length - 1}
-              emptyText={t('layers.emptyText')}
-            />
-          );
-        })}
-      </List>
-    </Paper>
+      <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+        {t('layers.emptyHint')}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{ display: 'block', mt: 0.5, color: 'text.disabled' }}
+      >
+        {t('layers.emptyHintImage')}
+      </Typography>
+    </ListItem>
   );
 };

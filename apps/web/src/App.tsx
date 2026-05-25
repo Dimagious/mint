@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AppBar,
   Box,
   Button,
+  Divider,
   Drawer,
   IconButton,
   Menu,
@@ -20,26 +21,31 @@ import {
 import {
   CropFree,
   Download,
+  FileDownloadOutlined,
   FolderOpen,
-  LocalCafe,
-  MoreVert,
+  KeyboardOutlined,
+  LocalCafeOutlined,
+  MoreHoriz,
   Redo,
   Save,
   TextFields,
   Tune,
   Undo,
   ViewSidebar,
+  Close,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import type { EditorDocument, ExportOptions } from '@mint/core';
 import { ExportDialog } from '@mint/ui';
 import mintPrimaryLogo from './assets/mint-logo-primary.png';
-import { CanvasPanel } from './components/CanvasPanel';
+import { CanvasPanel, CanvasPanelHandle } from './components/CanvasPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LayersPanel } from './components/LayersPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ToolbarSection } from './components/ToolbarSection';
+import { AutosaveBadge } from './components/AutosaveBadge';
+import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { isEditorDocument } from './utils/document-validation';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/dimagious';
@@ -53,21 +59,29 @@ function isQuotaExceededError(error: unknown): boolean {
   );
 }
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Root                                                                       */
+/* ────────────────────────────────────────────────────────────────────────── */
+
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const language = i18n.language.startsWith('ru') ? 'ru' : 'en';
 
+  /* ─── State ─── */
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportPreview, setExportPreview] = useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showSafeZones, setShowSafeZones] = useState(true);
   const [mobileLayersOpen, setMobileLayersOpen] = useState(false);
   const [mobilePropertiesOpen, setMobilePropertiesOpen] = useState(false);
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<HTMLElement | null>(
+  const [overflowAnchor, setOverflowAnchor] = useState<HTMLElement | null>(
     null,
   );
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
 
+  /* ─── Store ─── */
   const canUndo = useEditorStore((s) => s.canUndo);
   const canRedo = useEditorStore((s) => s.canRedo);
   const undo = useEditorStore((s) => s.undo);
@@ -84,18 +98,18 @@ export const App: React.FC = () => {
   const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
   const clipboard = useEditorStore((s) => s.clipboard);
 
-  const mobileMenuOpen = Boolean(mobileMenuAnchor);
+  const overflowOpen = Boolean(overflowAnchor);
 
+  /* ─── Keyboard shortcuts (unchanged + ? + T) ─── */
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable
-      ) {
+      )
         return;
-      }
 
       const ctrl = e.ctrlKey || e.metaKey;
 
@@ -118,6 +132,9 @@ export const App: React.FC = () => {
           return;
         }
         pasteLayer();
+      } else if (ctrl && e.key === 'e') {
+        e.preventDefault();
+        setExportOpen(true);
       } else if (
         (e.key === 'Delete' || e.key === 'Backspace') &&
         selectedLayerId
@@ -128,9 +145,22 @@ export const App: React.FC = () => {
         if (layer?.locked) return;
         e.preventDefault();
         deleteSelectedLayer();
-      } else if (e.key === 'Escape' && selectedLayerId) {
+      } else if (e.key === 'Escape') {
+        if (shortcutsOpen) {
+          e.preventDefault();
+          setShortcutsOpen(false);
+          return;
+        }
+        if (selectedLayerId) {
+          e.preventDefault();
+          selectLayer(null);
+        }
+      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
-        selectLayer(null);
+        setShortcutsOpen(true);
+      } else if (e.key.toLowerCase() === 't' && !ctrl && !e.altKey) {
+        e.preventDefault();
+        addTextLayer();
       } else if (
         selectedLayerId &&
         !ctrl &&
@@ -149,15 +179,11 @@ export const App: React.FC = () => {
           e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy =
           e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
-        updateTextLayer(selectedLayerId, {
-          x: layer.x + dx,
-          y: layer.y + dy,
-        });
+        updateTextLayer(selectedLayerId, { x: layer.x + dx, y: layer.y + dy });
       }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [
     undo,
     redo,
@@ -170,27 +196,29 @@ export const App: React.FC = () => {
     deleteSelectedLayer,
     updateTextLayer,
     t,
+    addTextLayer,
+    shortcutsOpen,
   ]);
 
+  /* ─── Autosave (unchanged) ─── */
   useEffect(() => {
     const timer = setTimeout(() => {
-      const serializedDoc = JSON.stringify(doc);
+      const serialized = JSON.stringify(doc);
       try {
-        localStorage.setItem(PROJECT_STORAGE_KEY, serializedDoc);
+        localStorage.setItem(PROJECT_STORAGE_KEY, serialized);
       } catch (error) {
         if (!isQuotaExceededError(error)) return;
-        // Drop heavy background image when storage quota is exceeded.
-        const lightweightDoc: EditorDocument = {
+        const lightweight: EditorDocument = {
           ...doc,
           background: { ...doc.background, dataUrl: null },
         };
         try {
           localStorage.setItem(
             PROJECT_STORAGE_KEY,
-            JSON.stringify(lightweightDoc),
+            JSON.stringify(lightweight),
           );
         } catch {
-          // ignore storage errors
+          /* ignore */
         }
       }
     }, 500);
@@ -217,10 +245,10 @@ export const App: React.FC = () => {
     if (!isMobile) {
       setMobileLayersOpen(false);
       setMobilePropertiesOpen(false);
-      setMobileMenuAnchor(null);
     }
   }, [isMobile]);
 
+  /* ─── Save / Load project file (unchanged) ─── */
   const handleSaveFile = useCallback(() => {
     const json = JSON.stringify(doc, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -240,13 +268,9 @@ export const App: React.FC = () => {
       const file = input.files?.[0];
       if (!file) return;
       try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (isEditorDocument(parsed)) {
-          loadDocument(parsed);
-        } else {
-          setSnackbarMsg(t('errors.invalidFile'));
-        }
+        const parsed = JSON.parse(await file.text());
+        if (isEditorDocument(parsed)) loadDocument(parsed);
+        else setSnackbarMsg(t('errors.invalidFile'));
       } catch {
         setSnackbarMsg(t('errors.invalidFile'));
       }
@@ -254,280 +278,250 @@ export const App: React.FC = () => {
     input.click();
   }, [loadDocument, t]);
 
-  const [canvasPanelRef, setCanvasPanelRef] = useState<{
-    handleExport: (opts: ExportOptions) => void;
-  } | null>(null);
+  /* ─── Canvas ref ─── */
+  const canvasPanelRef = React.useRef<CanvasPanelHandle | null>(null);
 
   const handleExport = useCallback(
-    (options: ExportOptions) => {
-      if (!canvasPanelRef) {
+    (options: ExportOptions & { filename?: string; scale?: 1 | 2 }) => {
+      if (!canvasPanelRef.current) {
         setSnackbarMsg(t('errors.exportFailed'));
         return;
       }
-      canvasPanelRef.handleExport(options);
+      canvasPanelRef.current.handleExport(options);
     },
-    [canvasPanelRef, t],
+    [t],
   );
 
-  const handleLanguageChange = (
-    _: React.MouseEvent,
-    newLang: string | null,
-  ) => {
-    if (newLang) {
-      i18n.changeLanguage(newLang);
-    }
+  const openExport = () => {
+    setExportPreview(canvasPanelRef.current?.getPreviewDataUrl() ?? null);
+    setExportOpen(true);
   };
 
-  const handleMobileMenuClose = () => setMobileMenuAnchor(null);
+  const handleLanguageChange = (_: React.MouseEvent, lang: string | null) => {
+    if (lang) i18n.changeLanguage(lang);
+  };
+
+  const closeOverflow = () => setOverflowAnchor(null);
+
+  /* ─── Autosave signal — anything that changes on edit ─── */
+  const autosaveSignal = useMemo(
+    () =>
+      `${doc.presetId}:${doc.layers.length}:${JSON.stringify(doc.layers.map((l) => l.id + l.text + l.style.fontSize))}:${doc.background.dataUrl ? 'bg' : 'no-bg'}`,
+    [doc],
+  );
 
   return (
     <ErrorBoundary>
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          bgcolor: 'background.default',
+        }}
+      >
+        {/* ─── Top bar ─── */}
         <AppBar position="static" color="default" elevation={0}>
           <Toolbar
             variant="dense"
             sx={{
-              gap: 1,
-              minHeight: isMobile ? 66 : 74,
-              flexWrap: isMobile ? 'wrap' : 'nowrap',
-              py: isMobile ? 0.5 : 0.6,
+              gap: 1.25,
+              minHeight: 60,
+              flexWrap: 'nowrap',
+              py: 0.75,
             }}
           >
             <Box
               data-testid="app-title"
               sx={{
-                mr: isMobile ? 0.5 : 2,
                 display: 'flex',
                 alignItems: 'center',
                 flexShrink: 0,
+                mr: isMobile ? 0.5 : 1,
               }}
             >
               <Box
                 component="img"
                 src={mintPrimaryLogo}
-                alt="MINT logo"
+                alt="MINT"
                 sx={{
-                  height: isMobile ? 46 : 60,
+                  height: isMobile ? 30 : 36,
                   width: 'auto',
                   display: 'block',
-                  flexShrink: 0,
                 }}
               />
             </Box>
 
             <ToolbarSection compact={isMobile} />
 
-            <Stack
-              direction="row"
-              spacing={isMobile ? 0.25 : 1}
-              sx={{ ml: 'auto', alignItems: 'center' }}
-            >
-              {isMobile ? (
-                <>
-                  <Tooltip title={t('toolbar.undo')}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        onClick={undo}
-                        disabled={!canUndo}
-                      >
-                        <Undo fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.redo')}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        onClick={redo}
-                        disabled={!canRedo}
-                      >
-                        <Redo fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.addText')}>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        addTextLayer();
-                        setMobilePropertiesOpen(true);
-                      }}
-                    >
-                      <TextFields fontSize="small" />
+            {!isMobile && (
+              <>
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ mx: 0.5, my: 1.25 }}
+                />
+                <Tooltip title={t('toolbar.undo')}>
+                  <span>
+                    <IconButton onClick={undo} disabled={!canUndo} size="small">
+                      <Undo />
                     </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.export')}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setExportOpen(true)}
-                    >
-                      <Download fontSize="small" />
+                  </span>
+                </Tooltip>
+                <Tooltip title={t('toolbar.redo')}>
+                  <span>
+                    <IconButton onClick={redo} disabled={!canRedo} size="small">
+                      <Redo />
                     </IconButton>
-                  </Tooltip>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => setMobileMenuAnchor(e.currentTarget)}
-                    aria-label={t('toolbar.more')}
-                  >
-                    <MoreVert fontSize="small" />
+                  </span>
+                </Tooltip>
+                <AutosaveBadge signal={autosaveSignal} />
+              </>
+            )}
+
+            <Box sx={{ flex: 1 }} />
+
+            {isMobile ? (
+              <>
+                <Tooltip title={t('toolbar.addText')}>
+                  <IconButton size="small" onClick={() => addTextLayer()}>
+                    <TextFields fontSize="small" />
                   </IconButton>
-                  <Menu
-                    anchorEl={mobileMenuAnchor}
-                    open={mobileMenuOpen}
-                    onClose={handleMobileMenuClose}
+                </Tooltip>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<Download sx={{ fontSize: 16 }} />}
+                  onClick={openExport}
+                  data-testid="export-open"
+                >
+                  {t('toolbar.export')}
+                </Button>
+                <IconButton
+                  size="small"
+                  onClick={(e) => setOverflowAnchor(e.currentTarget)}
+                >
+                  <MoreHoriz />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<TextFields sx={{ fontSize: 16 }} />}
+                  onClick={() => addTextLayer()}
+                >
+                  {t('toolbar.addText')}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Download sx={{ fontSize: 16 }} />}
+                  onClick={openExport}
+                  data-testid="export-open"
+                >
+                  {t('toolbar.export')}
+                </Button>
+                <Tooltip title={t('toolbar.more')}>
+                  <IconButton
+                    onClick={(e) => setOverflowAnchor(e.currentTarget)}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        handleSaveFile();
-                        handleMobileMenuClose();
-                      }}
-                    >
-                      {t('toolbar.save')}
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        handleLoadFile();
-                        handleMobileMenuClose();
-                      }}
-                    >
-                      {t('toolbar.load')}
-                    </MenuItem>
-                    <MenuItem
-                      selected={showSafeZones}
-                      onClick={() => {
-                        setShowSafeZones((prev) => !prev);
-                        handleMobileMenuClose();
-                      }}
-                    >
-                      {t('toolbar.safeZones')}
-                    </MenuItem>
-                    <MenuItem
-                      component="a"
-                      href={BUYMEACOFFEE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleMobileMenuClose}
-                    >
-                      {t('toolbar.donate')}
-                    </MenuItem>
-                    <MenuItem
-                      selected={language === 'en'}
-                      onClick={() => {
-                        i18n.changeLanguage('en');
-                        handleMobileMenuClose();
-                      }}
-                    >
-                      English
-                    </MenuItem>
-                    <MenuItem
-                      selected={language === 'ru'}
-                      onClick={() => {
-                        i18n.changeLanguage('ru');
-                        handleMobileMenuClose();
-                      }}
-                    >
-                      Русский
-                    </MenuItem>
-                  </Menu>
-                </>
-              ) : (
-                <>
-                  <Button
-                    size="small"
-                    startIcon={<Undo />}
-                    onClick={undo}
-                    disabled={!canUndo}
-                  >
-                    {t('toolbar.undo')}
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<Redo />}
-                    onClick={redo}
-                    disabled={!canRedo}
-                  >
-                    {t('toolbar.redo')}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<TextFields />}
-                    onClick={() => addTextLayer()}
-                  >
-                    {t('toolbar.addText')}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<Download />}
-                    onClick={() => setExportOpen(true)}
-                  >
-                    {t('toolbar.export')}
-                  </Button>
-                  <Tooltip title={t('toolbar.save')}>
-                    <IconButton size="small" onClick={handleSaveFile}>
-                      <Save fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.load')}>
-                    <IconButton size="small" onClick={handleLoadFile}>
-                      <FolderOpen fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.safeZones')}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowSafeZones((prev) => !prev)}
-                      sx={{
-                        color: showSafeZones
-                          ? 'primary.main'
-                          : 'text.secondary',
-                      }}
-                    >
-                      <CropFree fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('toolbar.donate')}>
-                    <IconButton
-                      size="small"
-                      component="a"
-                      href={BUYMEACOFFEE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <LocalCafe fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <ToggleButtonGroup
-                    value={language}
-                    exclusive
-                    onChange={handleLanguageChange}
-                    size="small"
-                    sx={{ height: 30 }}
-                  >
-                    <ToggleButton
-                      value="en"
-                      sx={{ px: 1, py: 0, fontSize: '0.75rem' }}
-                    >
-                      EN
-                    </ToggleButton>
-                    <ToggleButton
-                      value="ru"
-                      sx={{ px: 1, py: 0, fontSize: '0.75rem' }}
-                    >
-                      RU
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </>
-              )}
-            </Stack>
+                    <MoreHoriz />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+
+            {/* Overflow menu — replaces 5 separate icon buttons in old toolbar */}
+            <Menu
+              anchorEl={overflowAnchor}
+              open={overflowOpen}
+              onClose={closeOverflow}
+              slotProps={{ paper: { sx: { minWidth: 220 } } }}
+            >
+              <MenuItem
+                onClick={() => {
+                  handleSaveFile();
+                  closeOverflow();
+                }}
+              >
+                <Save fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.save')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleLoadFile();
+                  closeOverflow();
+                }}
+              >
+                <FolderOpen fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.load')}
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  setShowSafeZones((p) => !p);
+                  closeOverflow();
+                }}
+              >
+                <CropFree
+                  fontSize="small"
+                  sx={{
+                    mr: 1.25,
+                    color: showSafeZones ? 'primary.main' : 'inherit',
+                  }}
+                />
+                {t('toolbar.safeZones')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setShortcutsOpen(true);
+                  closeOverflow();
+                }}
+              >
+                <KeyboardOutlined fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.shortcuts')}
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                component="a"
+                href={BUYMEACOFFEE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeOverflow}
+              >
+                <LocalCafeOutlined fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.donate')}
+              </MenuItem>
+              <Divider />
+              <Box sx={{ px: 1.5, py: 0.75 }}>
+                <ToggleButtonGroup
+                  value={language}
+                  exclusive
+                  onChange={handleLanguageChange}
+                  size="small"
+                  sx={{ width: '100%' }}
+                  fullWidth
+                >
+                  <ToggleButton value="en" sx={{ flex: 1 }}>
+                    EN
+                  </ToggleButton>
+                  <ToggleButton value="ru" sx={{ flex: 1 }}>
+                    RU
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Menu>
           </Toolbar>
         </AppBar>
 
+        {/* ─── Body ─── */}
         <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {!isMobile && <LayersPanel />}
+          {!isMobile && (
+            <LayersPanel
+              showSafeZones={showSafeZones}
+              onToggleSafeZones={setShowSafeZones}
+            />
+          )}
 
           <Box
             sx={{
@@ -537,60 +531,122 @@ export const App: React.FC = () => {
               justifyContent: 'center',
               bgcolor: 'background.default',
               overflow: 'auto',
-              p: isMobile ? 1.25 : 2,
-              pb: isMobile ? 10 : 2,
+              p: isMobile ? 1.5 : 3,
+              pb: isMobile ? 11 : 3,
+              // Dotted-grid backdrop (BRIEF §4.4)
+              backgroundImage:
+                'radial-gradient(circle at 1px 1px, rgba(0,0,0,.045) 1px, transparent 0)',
+              backgroundSize: '18px 18px',
             }}
           >
             <CanvasPanel
-              ref={setCanvasPanelRef}
+              ref={canvasPanelRef}
               showSafeZones={showSafeZones}
+              onRequestUpload={() => {
+                // Surface the upload picker via the bg-upload input.
+                const el = document.querySelector<HTMLInputElement>(
+                  '[data-testid="bg-upload"]',
+                );
+                el?.click();
+              }}
+              onRequestAddText={() => addTextLayer()}
             />
           </Box>
 
           {!isMobile && <PropertiesPanel />}
         </Box>
 
+        {/* ─── Mobile bottom bar (BRIEF §6.3) ─── */}
         {isMobile && (
           <>
             <Paper
-              elevation={4}
+              elevation={0}
               sx={{
                 position: 'fixed',
                 left: 0,
                 right: 0,
                 bottom: 0,
+                pb: 'env(safe-area-inset-bottom)',
                 borderTop: 1,
                 borderColor: 'divider',
-                zIndex: (muiTheme) => muiTheme.zIndex.appBar,
+                bgcolor: 'rgba(255,255,255,.92)',
+                backdropFilter: 'blur(14px)',
+                zIndex: (m) => m.zIndex.appBar,
+                borderRadius: 0,
               }}
             >
-              <Stack direction="row" spacing={1} sx={{ p: 1 }}>
-                <Button
-                  size="small"
-                  fullWidth
-                  startIcon={<ViewSidebar />}
-                  onClick={() => setMobileLayersOpen(true)}
-                  data-testid="mobile-layers-button"
-                >
-                  {t('mobile.layers')}
-                </Button>
-                <Tooltip
-                  title={!selectedLayerId ? t('mobile.noLayerSelected') : ''}
-                  placement="top"
-                >
-                  <span style={{ flex: 1 }}>
-                    <Button
-                      size="small"
-                      fullWidth
-                      startIcon={<Tune />}
-                      onClick={() => setMobilePropertiesOpen(true)}
-                      disabled={!selectedLayerId}
-                      data-testid="mobile-properties-button"
-                    >
-                      {t('mobile.properties')}
-                    </Button>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={0.5}
+                sx={{ px: 1.5, py: 1.25 }}
+              >
+                <Tooltip title={t('toolbar.undo')}>
+                  <span>
+                    <IconButton size="small" onClick={undo} disabled={!canUndo}>
+                      <Undo fontSize="small" />
+                    </IconButton>
                   </span>
                 </Tooltip>
+                <Tooltip title={t('toolbar.redo')}>
+                  <span>
+                    <IconButton size="small" onClick={redo} disabled={!canRedo}>
+                      <Redo fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 0.5,
+                  }}
+                >
+                  <Button
+                    size="small"
+                    startIcon={<ViewSidebar sx={{ fontSize: 16 }} />}
+                    onClick={() => setMobileLayersOpen(true)}
+                    data-testid="mobile-layers-button"
+                  >
+                    {t('mobile.layers')}
+                  </Button>
+                  <Tooltip
+                    title={!selectedLayerId ? t('mobile.noLayerSelected') : ''}
+                    placement="top"
+                  >
+                    <span>
+                      <Button
+                        size="small"
+                        startIcon={<Tune sx={{ fontSize: 16 }} />}
+                        onClick={() => setMobilePropertiesOpen(true)}
+                        disabled={!selectedLayerId}
+                        data-testid="mobile-properties-button"
+                      >
+                        {selectedLayerId
+                          ? t('mobile.properties')
+                          : t('mobile.properties')}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Box>
+                <Tooltip title={t('toolbar.addText')}>
+                  <IconButton size="small" onClick={() => addTextLayer()}>
+                    <TextFields fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={openExport}
+                  sx={{
+                    bgcolor: 'primary.main',
+                    color: '#fff',
+                    '&:hover': { bgcolor: 'primary.dark' },
+                  }}
+                >
+                  <FileDownloadOutlined fontSize="small" />
+                </IconButton>
               </Stack>
             </Paper>
 
@@ -598,9 +654,24 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobileLayersOpen}
               onClose={() => setMobileLayersOpen(false)}
+              PaperProps={{
+                sx: {
+                  borderTopLeftRadius: 22,
+                  borderTopRightRadius: 22,
+                  maxHeight: '90dvh',
+                },
+              }}
             >
-              <Box sx={{ maxHeight: '80dvh', overflowY: 'auto' }}>
-                <LayersPanel mobile />
+              <DrawerHeader
+                title={t('mobile.drawerTitleLayers')}
+                onClose={() => setMobileLayersOpen(false)}
+              />
+              <Box sx={{ overflowY: 'auto' }}>
+                <LayersPanel
+                  mobile
+                  showSafeZones={showSafeZones}
+                  onToggleSafeZones={setShowSafeZones}
+                />
               </Box>
             </Drawer>
 
@@ -608,8 +679,27 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobilePropertiesOpen}
               onClose={() => setMobilePropertiesOpen(false)}
+              PaperProps={{
+                sx: {
+                  borderTopLeftRadius: 22,
+                  borderTopRightRadius: 22,
+                  maxHeight: '90dvh',
+                },
+              }}
             >
-              <Box sx={{ maxHeight: '80dvh', overflowY: 'auto' }}>
+              <DrawerHeader
+                title={
+                  selectedLayerId
+                    ? t('mobile.drawerTitleEditing', {
+                        name:
+                          doc.layers.find((l) => l.id === selectedLayerId)
+                            ?.text || t('layers.emptyText'),
+                      })
+                    : t('properties.title')
+                }
+                onClose={() => setMobilePropertiesOpen(false)}
+              />
+              <Box sx={{ overflowY: 'auto' }}>
                 <PropertiesPanel mobile />
               </Box>
             </Drawer>
@@ -620,6 +710,13 @@ export const App: React.FC = () => {
           open={exportOpen}
           onClose={() => setExportOpen(false)}
           onExport={handleExport}
+          doc={doc}
+          previewDataUrl={exportPreview}
+        />
+
+        <ShortcutsDialog
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
         />
 
         <Snackbar
@@ -632,3 +729,27 @@ export const App: React.FC = () => {
     </ErrorBoundary>
   );
 };
+
+const DrawerHeader: React.FC<{ title: string; onClose: () => void }> = ({
+  title,
+  onClose,
+}) => (
+  <>
+    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.25, pb: 0.5 }}>
+      <Box
+        sx={{ width: 40, height: 4, bgcolor: 'divider', borderRadius: '999px' }}
+      />
+    </Box>
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      sx={{ px: 2, pb: 1.75, borderBottom: 1, borderColor: 'divider' }}
+    >
+      <Box sx={{ fontSize: 16, fontWeight: 600 }}>{title}</Box>
+      <IconButton onClick={onClose} size="small">
+        <Close fontSize="small" />
+      </IconButton>
+    </Stack>
+  </>
+);
