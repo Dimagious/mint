@@ -400,7 +400,7 @@ export class FabricAdapter {
 
   getExportDataUrl(
     preset: CanvasPreset,
-    format: string,
+    format: 'png' | 'jpeg' | 'webp',
     quality: number,
   ): string {
     const currentZoom = this.canvas.getZoom();
@@ -413,11 +413,12 @@ export class FabricAdapter {
     this.canvas.setZoom(1);
     this.canvas.requestRenderAll();
 
-    const multiplier = 1;
+    // PNG ignores `quality`; JPEG and WebP both honor it (0..1).
+    const usesQuality = format === 'jpeg' || format === 'webp';
     const dataUrl = this.canvas.toDataURL({
-      format: format === 'jpeg' ? 'jpeg' : 'png',
-      quality: format === 'jpeg' ? quality / 100 : 1,
-      multiplier,
+      format,
+      quality: usesQuality ? quality / 100 : 1,
+      multiplier: 1,
     });
 
     this.canvas.setDimensions({ width: currentWidth, height: currentHeight });

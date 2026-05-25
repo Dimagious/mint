@@ -29,16 +29,17 @@ interface ExportDialogProps {
   previewDataUrl?: string | null;
 }
 
-const FORMAT_BPP: Record<ExportFormat | 'webp', number> = {
+const FORMAT_BPP: Record<ExportFormat, number> = {
   png: 4,
   jpeg: 0.6,
   webp: 0.4,
 };
 
-function defaultFilename(format: ExportFormat | 'webp'): string {
+function defaultFilename(format: ExportFormat): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `mint-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.${format === 'jpeg' ? 'jpg' : format}`;
+  const ext = format === 'jpeg' ? 'jpg' : format;
+  return `mint-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`;
 }
 
 /**
@@ -54,7 +55,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   previewDataUrl,
 }) => {
   const { t } = useTranslation();
-  const [format, setFormat] = useState<ExportFormat | 'webp'>('png');
+  const [format, setFormat] = useState<ExportFormat>('png');
   const [scale, setScale] = useState<1 | 2>(1);
   const [filename, setFilename] = useState(() => defaultFilename('png'));
 
@@ -89,12 +90,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     return `${(estBytes / (1024 * 1024)).toFixed(1)} MB`;
   }, [estBytes]);
 
-  // 'webp' isn't part of the original ExportFormat type — pass it through as 'jpeg'
-  // fallback for now (FabricAdapter handles png/jpeg); we'll widen the type in a follow-up.
   const submit = () => {
-    const safeFormat: ExportFormat =
-      format === 'webp' ? 'jpeg' : (format as ExportFormat);
-    onExport({ format: safeFormat, quality: 90, filename, scale });
+    onExport({ format, quality: 90, filename, scale });
     onClose();
   };
 
