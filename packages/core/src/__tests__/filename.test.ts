@@ -12,6 +12,11 @@ describe('generateExportFilename', () => {
     expect(filename).toMatch(/^mint_.*\.jpg$/);
   });
 
+  it('should generate WebP filename for webp format', () => {
+    const filename = generateExportFilename('webp');
+    expect(filename).toMatch(/^mint_.*\.webp$/);
+  });
+
   it('should start with mint prefix', () => {
     const filename = generateExportFilename('png');
     expect(filename).toMatch(/^mint_/);

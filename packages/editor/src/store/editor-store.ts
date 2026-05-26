@@ -17,6 +17,7 @@ import { AddTextLayerCommand } from '../commands/add-text-layer-command';
 import { RemoveTextLayerCommand } from '../commands/remove-text-layer-command';
 import { UpdateTextLayerCommand } from '../commands/update-text-layer-command';
 import { ReorderLayerCommand } from '../commands/reorder-layer-command';
+import { ReorderLayerToIndexCommand } from '../commands/reorder-layer-to-index-command';
 import { SetBackgroundCommand } from '../commands/set-background-command';
 import { ChangePresetCommand } from '../commands/change-preset-command';
 
@@ -36,6 +37,7 @@ export interface EditorState {
     changes: Partial<Omit<TextLayerData, 'id'>>,
   ) => void;
   reorderLayer: (layerId: string, direction: 'up' | 'down') => void;
+  reorderLayerToIndex: (layerId: string, newIndex: number) => void;
   selectLayer: (layerId: string | null) => void;
   duplicateLayer: (layerId: string) => void;
   copyLayer: () => void;
@@ -116,6 +118,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   reorderLayer: (layerId, direction) => {
     const cmd = new ReorderLayerCommand(layerId, direction);
+    const newDoc = history.execute(cmd, get().document);
+    set({
+      document: newDoc,
+      canUndo: history.canUndo,
+      canRedo: history.canRedo,
+    });
+  },
+
+  reorderLayerToIndex: (layerId, newIndex) => {
+    const cmd = new ReorderLayerToIndexCommand(layerId, newIndex);
     const newDoc = history.execute(cmd, get().document);
     set({
       document: newDoc,

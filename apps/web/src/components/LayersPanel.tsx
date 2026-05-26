@@ -20,6 +20,23 @@ import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import { LayerListItem } from '@mint/ui';
 import { readFileAsDataUrl } from '@mint/utils';
+import type { TextLayerData } from '@mint/core';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const PANEL_WIDTH = 280;
 
@@ -50,8 +67,36 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   const removeTextLayer = useEditorStore((s) => s.removeTextLayer);
   const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
   const reorderLayer = useEditorStore((s) => s.reorderLayer);
+  const reorderLayerToIndex = useEditorStore((s) => s.reorderLayerToIndex);
   const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
   const setBackground = useEditorStore((s) => s.setBackground);
+
+  // DnD sensors — PointerSensor with a small activation distance keeps the
+  // grip clickable, and KeyboardSensor gives non-mouse users space/enter
+  // pickup + arrow-key reorder.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      // The Sortable list is keyed by layer ids in visual (top-of-stack first)
+      // order, which is the reverse of doc.layers. Translate the drop target
+      // back to the document's stacking index.
+      const total = doc.layers.length;
+      const visualOrder = doc.layers.map((l) => l.id).reverse();
+      const visualTo = visualOrder.indexOf(String(over.id));
+      if (visualTo === -1) return;
+      const newDocIndex = total - 1 - visualTo;
+      reorderLayerToIndex(String(active.id), newDocIndex);
+    },
+    [doc.layers, reorderLayerToIndex],
+  );
 
   const onUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,32 +271,43 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
         {reversed.length === 0 ? (
           <EmptyLayersHint />
         ) : (
-          <List sx={{ p: 0 }}>
-            {reversed.map((layer, visualIndex) => {
-              const actualIndex = doc.layers.length - 1 - visualIndex;
-              return (
-                <LayerListItem
-                  key={layer.id}
-                  layer={layer}
-                  isSelected={layer.id === selectedLayerId}
-                  onSelect={() => selectLayer(layer.id)}
-                  onDelete={() => removeTextLayer(layer.id)}
-                  onDuplicate={() => duplicateLayer(layer.id)}
-                  onToggleVisibility={() =>
-                    updateTextLayer(layer.id, { visible: !layer.visible })
-                  }
-                  onToggleLock={() =>
-                    updateTextLayer(layer.id, { locked: !layer.locked })
-                  }
-                  onMoveUp={() => reorderLayer(layer.id, 'up')}
-                  onMoveDown={() => reorderLayer(layer.id, 'down')}
-                  isFirst={actualIndex === 0}
-                  isLast={actualIndex === doc.layers.length - 1}
-                  emptyText={t('layers.emptyText')}
-                />
-              );
-            })}
-          </List>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={reversed.map((l) => l.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <List sx={{ p: 0 }}>
+                {reversed.map((layer, visualIndex) => {
+                  const actualIndex = doc.layers.length - 1 - visualIndex;
+                  return (
+                    <SortableLayer
+                      key={layer.id}
+                      layer={layer}
+                      isSelected={layer.id === selectedLayerId}
+                      onSelect={() => selectLayer(layer.id)}
+                      onDelete={() => removeTextLayer(layer.id)}
+                      onDuplicate={() => duplicateLayer(layer.id)}
+                      onToggleVisibility={() =>
+                        updateTextLayer(layer.id, { visible: !layer.visible })
+                      }
+                      onToggleLock={() =>
+                        updateTextLayer(layer.id, { locked: !layer.locked })
+                      }
+                      onMoveUp={() => reorderLayer(layer.id, 'up')}
+                      onMoveDown={() => reorderLayer(layer.id, 'down')}
+                      isFirst={actualIndex === 0}
+                      isLast={actualIndex === doc.layers.length - 1}
+                      emptyText={t('layers.emptyText')}
+                    />
+                  );
+                })}
+              </List>
+            </SortableContext>
+          </DndContext>
         )}
       </Section>
 
@@ -280,6 +336,52 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 };
 
 /* ─────────── Internal building blocks ─────────── */
+
+interface SortableLayerProps {
+  layer: TextLayerData;
+  isSelected: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+  onToggleVisibility: () => void;
+  onToggleLock: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+  emptyText?: string;
+}
+
+/**
+ * Adapter that hooks dnd-kit's `useSortable` into our presentational
+ * `<LayerListItem>` via its `drag` prop. Keeps @mint/ui dnd-agnostic.
+ */
+const SortableLayer: React.FC<SortableLayerProps> = (props) => {
+  const sortable = useSortable({ id: props.layer.id });
+  const {
+    setNodeRef,
+    transform,
+    transition,
+    attributes,
+    listeners,
+    isDragging,
+  } = sortable;
+
+  return (
+    <LayerListItem
+      {...props}
+      drag={{
+        setRootRef: setNodeRef,
+        rootStyle: {
+          transform: CSS.Transform.toString(transform),
+          transition,
+        },
+        dragHandleProps: { ...attributes, ...listeners },
+        isDragging,
+      }}
+    />
+  );
+};
 
 const Section: React.FC<{
   title: string;
