@@ -19,7 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import { LayerListItem } from '@mint/ui';
-import { readFileAsDataUrl } from '@mint/utils';
+import { readImageFileSafely, ImageRejectedError } from '@mint/utils';
 import type { TextLayerData } from '@mint/core';
 import {
   DndContext,
@@ -45,6 +45,8 @@ interface LayersPanelProps {
   /** Used by the desktop top bar safe-zones toggle when it lives here (BRIEF §4.2 §3). */
   showSafeZones?: boolean;
   onToggleSafeZones?: (v: boolean) => void;
+  /** Surfaced when the upload input rejects a file (MIME/size/magic check). */
+  onImageRejected?: (code: ImageRejectedError['code']) => void;
 }
 
 /**
@@ -57,6 +59,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   mobile = false,
   showSafeZones,
   onToggleSafeZones,
+  onImageRejected,
 }) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -104,14 +107,20 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
       if (!file) return;
       setUploading(true);
       try {
-        const dataUrl = await readFileAsDataUrl(file);
+        const dataUrl = await readImageFileSafely(file);
         setBackground({ ...doc.background, dataUrl });
+      } catch (err) {
+        if (err instanceof ImageRejectedError) {
+          onImageRejected?.(err.code);
+        } else {
+          throw err;
+        }
       } finally {
         setUploading(false);
         e.target.value = '';
       }
     },
-    [setBackground, doc.background],
+    [setBackground, doc.background, onImageRejected],
   );
 
   const reversed = [...doc.layers].reverse();

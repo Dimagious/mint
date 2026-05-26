@@ -47,6 +47,7 @@ import { AutosaveBadge } from './components/AutosaveBadge';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { isEditorDocument } from './utils/document-validation';
 import { usePullDownToClose } from './hooks/usePullDownToClose';
+import type { ImageRejectedError } from '@mint/utils';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/dimagious';
 const PROJECT_STORAGE_KEY = 'mint-project';
@@ -104,6 +105,14 @@ export const App: React.FC = () => {
   const layersDrawer = usePullDownToClose(() => setMobileLayersOpen(false));
   const propertiesDrawer = usePullDownToClose(() =>
     setMobilePropertiesOpen(false),
+  );
+
+  /* ─── Image rejection → localized snackbar ─── */
+  const handleImageRejected = useCallback(
+    (code: ImageRejectedError['code']) => {
+      setSnackbarMsg(t(`errors.image.${code}`));
+    },
+    [t],
   );
 
   /* ─── Keyboard shortcuts (unchanged + ? + T) ─── */
@@ -531,6 +540,7 @@ export const App: React.FC = () => {
             <LayersPanel
               showSafeZones={showSafeZones}
               onToggleSafeZones={setShowSafeZones}
+              onImageRejected={handleImageRejected}
             />
           )}
 
@@ -561,6 +571,7 @@ export const App: React.FC = () => {
                 el?.click();
               }}
               onRequestAddText={() => addTextLayer()}
+              onImageRejected={handleImageRejected}
             />
           </Box>
 
@@ -684,6 +695,7 @@ export const App: React.FC = () => {
                   mobile
                   showSafeZones={showSafeZones}
                   onToggleSafeZones={setShowSafeZones}
+                  onImageRejected={handleImageRejected}
                 />
               </Box>
             </Drawer>

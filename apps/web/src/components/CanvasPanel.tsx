@@ -16,7 +16,7 @@ import {
   getPresetById,
   getSafeZoneByPresetId,
 } from '@mint/core';
-import { readFileAsDataUrl } from '@mint/utils';
+import { readImageFileSafely, ImageRejectedError } from '@mint/utils';
 import { EmptyStateOverlay } from './EmptyStateOverlay';
 
 export interface CanvasPanelHandle {
@@ -32,6 +32,8 @@ interface CanvasPanelProps {
   /** Optional callbacks for the empty-state CTAs. */
   onRequestUpload?: () => void;
   onRequestAddText?: () => void;
+  /** Surfaced when a dropped file fails MIME/size/magic-byte validation. */
+  onImageRejected?: (code: ImageRejectedError['code']) => void;
 }
 
 const MAX_SCALE = 0.5;
@@ -74,7 +76,7 @@ function computeScale(presetId: string): number {
  */
 export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
   function CanvasPanel(
-    { showSafeZones, onRequestUpload, onRequestAddText },
+    { showSafeZones, onRequestUpload, onRequestAddText, onImageRejected },
     ref,
   ) {
     const { t } = useTranslation();
@@ -170,11 +172,19 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         e.preventDefault();
         setDragging(false);
         const file = e.dataTransfer.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        const dataUrl = await readFileAsDataUrl(file);
-        setBackground({ ...doc.background, dataUrl });
+        if (!file) return;
+        try {
+          const dataUrl = await readImageFileSafely(file);
+          setBackground({ ...doc.background, dataUrl });
+        } catch (err) {
+          if (err instanceof ImageRejectedError) {
+            onImageRejected?.(err.code);
+          } else {
+            throw err;
+          }
+        }
       },
-      [setBackground, doc.background],
+      [setBackground, doc.background, onImageRejected],
     );
 
     const handleDragOver = useCallback((e: React.DragEvent) => {

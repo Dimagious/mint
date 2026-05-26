@@ -157,7 +157,14 @@
   "errors": {
     "invalidFile": "Invalid project file format",
     "exportFailed": "Export failed: canvas not ready",
-    "nothingToPaste": "Nothing to paste — copy a layer first"
+    "nothingToPaste": "Nothing to paste — copy a layer first",
+    "image": {
+      "empty": "That file is empty",
+      "size": "Image too large — keep it under 15 MB",
+      "mime": "Use a JPEG, PNG, or WebP image",
+      "magic": "That file doesn't look like a real image",
+      "read-failed": "Couldn't read that file — try another one"
+    }
   },
   "presets": {
     "square": "Square",
