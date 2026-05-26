@@ -112,6 +112,51 @@ describe('isEditorDocument', () => {
     expect(isEditorDocument(invalid)).toBe(false);
   });
 
+  it('accepts a valid manual background transform', () => {
+    const doc = createDefaultDocument();
+    const valid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        manual: { x: 100, y: 50, scale: 1.5 },
+      },
+    };
+    expect(isEditorDocument(valid)).toBe(true);
+  });
+
+  it('accepts a null manual background transform', () => {
+    const doc = createDefaultDocument();
+    const valid = {
+      ...doc,
+      background: { ...doc.background, manual: null },
+    };
+    expect(isEditorDocument(valid)).toBe(true);
+  });
+
+  it('rejects a manual transform with an out-of-bounds scale', () => {
+    const doc = createDefaultDocument();
+    const invalid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        manual: { x: 0, y: 0, scale: 9999 },
+      },
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('rejects a manual transform with a non-finite coordinate', () => {
+    const doc = createDefaultDocument();
+    const invalid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        manual: { x: Infinity, y: 0, scale: 1 },
+      },
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
   it('rejects documents with too many layers', () => {
     const layer = createTextLayer();
     const layers = Array.from({ length: 101 }, (_, i) => ({

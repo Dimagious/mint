@@ -4,6 +4,7 @@ import type {
   TextLayerData,
   CanvasPresetId,
   BackgroundData,
+  BackgroundTransform,
 } from '@mint/core';
 import { createDefaultDocument, createTextLayer } from '@mint/core';
 import type { Command } from '../commands/command';
@@ -32,6 +33,13 @@ export interface EditorState {
 
   setPreset: (presetId: CanvasPresetId) => void;
   setBackground: (background: BackgroundData) => void;
+  /**
+   * Persist a manual position/scale for the background image. Each call
+   * goes through the command history and coalesces with adjacent updates
+   * (same as a slider drag) so a long drag-then-zoom gesture lands as a
+   * single undo entry.
+   */
+  setBackgroundTransform: (transform: BackgroundTransform | null) => void;
   /** Returns the id of the newly created layer so the caller can select it. */
   addTextLayer: (overrides?: Partial<Omit<TextLayerData, 'id'>>) => string;
   removeTextLayer: (layerId: string) => void;
@@ -97,6 +105,16 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     setBackground: (background) => {
       runCommand(new SetBackgroundCommand(background));
+    },
+
+    setBackgroundTransform: (transform) => {
+      const { document } = get();
+      runCommand(
+        new SetBackgroundCommand({
+          ...document.background,
+          manual: transform,
+        }),
+      );
     },
 
     addTextLayer: (overrides) => {

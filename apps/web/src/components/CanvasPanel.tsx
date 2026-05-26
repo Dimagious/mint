@@ -10,7 +10,11 @@ import { Box, Typography } from '@mui/material';
 import { CropFree } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { FabricAdapter, useEditorStore } from '@mint/editor';
-import type { ExportOptions, TextLayerData } from '@mint/core';
+import type {
+  BackgroundTransform,
+  ExportOptions,
+  TextLayerData,
+} from '@mint/core';
 import {
   generateExportFilename,
   getPresetById,
@@ -95,6 +99,9 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
     const selectLayer = useEditorStore((s) => s.selectLayer);
     const updateTextLayer = useEditorStore((s) => s.updateTextLayer);
     const setBackground = useEditorStore((s) => s.setBackground);
+    const setBackgroundTransform = useEditorStore(
+      (s) => s.setBackgroundTransform,
+    );
     const addTextLayer = useEditorStore((s) => s.addTextLayer);
 
     const [dragging, setDragging] = useState(false);
@@ -112,6 +119,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         (id: string | null) => selectLayer(id),
         (id: string, changes: Partial<Omit<TextLayerData, 'id'>>) =>
           updateTextLayer(id, changes),
+        (transform: BackgroundTransform) => setBackgroundTransform(transform),
       );
       return () => {
         adapter.dispose();

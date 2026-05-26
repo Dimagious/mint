@@ -37,6 +37,8 @@
     "removeImage": "Clear image",
     "fitCover": "Crop",
     "fitContain": "Fit",
+    "resetBg": "Reset position",
+    "bgDragHint": "Drag the photo on the canvas to reframe it.",
     "title": "Layers",
     "add": "Add",
     "addText": "Add text",

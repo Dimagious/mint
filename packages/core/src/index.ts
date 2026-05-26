@@ -3,6 +3,7 @@ export type {
   EditorDocument,
   TextLayerData,
   BackgroundData,
+  BackgroundTransform,
   TextStyle,
   TextShadow,
   TextStroke,

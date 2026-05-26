@@ -165,13 +165,31 @@ function isDataUrl(value: unknown): value is string {
   );
 }
 
-function isBackground(value: unknown): value is BackgroundData {
+function isBackgroundTransform(value: unknown): boolean {
   if (!isRecord(value)) return false;
   return (
-    (value.dataUrl === null || isDataUrl(value.dataUrl)) &&
-    (value.fit === 'contain' || value.fit === 'cover') &&
-    isColorString(value.color)
+    isBoundedNumber(value.x, BOUNDS.coordinate) &&
+    isBoundedNumber(value.y, BOUNDS.coordinate) &&
+    // Scale is bounded between 1% and 1000% — generous, but defeats
+    // pathologically tiny / huge values that would crash fabric.
+    isBoundedNumber(value.scale, { min: 0.01, max: 10 })
   );
+}
+
+function isBackground(value: unknown): value is BackgroundData {
+  if (!isRecord(value)) return false;
+  if (!(value.dataUrl === null || isDataUrl(value.dataUrl))) return false;
+  if (!(value.fit === 'contain' || value.fit === 'cover')) return false;
+  if (!isColorString(value.color)) return false;
+  // `manual` is optional / nullable; when present, must be a valid transform.
+  if (
+    value.manual !== undefined &&
+    value.manual !== null &&
+    !isBackgroundTransform(value.manual)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 export function isEditorDocument(value: unknown): value is EditorDocument {

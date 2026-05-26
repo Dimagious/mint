@@ -198,34 +198,63 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
         </Box>
 
         {doc.background.dataUrl && (
-          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-            <Button
-              size="small"
-              fullWidth
-              startIcon={<ImageOutlined />}
-              onClick={() =>
-                setBackground({
-                  ...doc.background,
-                  fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
-                })
-              }
+          <>
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+              <Button
+                size="small"
+                fullWidth
+                startIcon={<ImageOutlined />}
+                onClick={() =>
+                  // Toggling Crop/Fit returns the photo to auto-fit by
+                  // clearing the manual transform — otherwise users would
+                  // see no visible change after a manual drag.
+                  setBackground({
+                    ...doc.background,
+                    fit: doc.background.fit === 'contain' ? 'cover' : 'contain',
+                    manual: null,
+                  })
+                }
+              >
+                {doc.background.fit === 'cover'
+                  ? t('layers.fitCover')
+                  : t('layers.fitContain')}
+              </Button>
+              <Button
+                size="small"
+                fullWidth
+                color="error"
+                startIcon={<HideImageOutlined />}
+                onClick={() =>
+                  setBackground({
+                    ...doc.background,
+                    dataUrl: null,
+                    manual: null,
+                  })
+                }
+              >
+                {t('layers.removeImage')}
+              </Button>
+            </Stack>
+            {doc.background.manual && (
+              <Button
+                size="small"
+                fullWidth
+                onClick={() =>
+                  setBackground({ ...doc.background, manual: null })
+                }
+                sx={{ mt: 0.75 }}
+                data-testid="bg-reset-position"
+              >
+                {t('layers.resetBg')}
+              </Button>
+            )}
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', mt: 0.75, color: 'text.disabled' }}
             >
-              {doc.background.fit === 'cover'
-                ? t('layers.fitCover')
-                : t('layers.fitContain')}
-            </Button>
-            <Button
-              size="small"
-              fullWidth
-              color="error"
-              startIcon={<HideImageOutlined />}
-              onClick={() =>
-                setBackground({ ...doc.background, dataUrl: null })
-              }
-            >
-              {t('layers.removeImage')}
-            </Button>
-          </Stack>
+              {t('layers.bgDragHint')}
+            </Typography>
+          </>
         )}
 
         <Box sx={{ mt: 1.75 }}>

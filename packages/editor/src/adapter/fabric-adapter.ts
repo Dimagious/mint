@@ -1,5 +1,10 @@
 import * as fabric from 'fabric';
-import type { EditorDocument, TextLayerData, CanvasPreset } from '@mint/core';
+import type {
+  BackgroundTransform,
+  EditorDocument,
+  TextLayerData,
+  CanvasPreset,
+} from '@mint/core';
 import { getPresetById } from '@mint/core';
 
 type SelectionCallback = (layerId: string | null) => void;
@@ -7,6 +12,7 @@ type ModifiedCallback = (
   layerId: string,
   changes: Partial<Omit<TextLayerData, 'id'>>,
 ) => void;
+type BackgroundTransformCallback = (transform: BackgroundTransform) => void;
 
 const SCALE_THRESHOLD = 0.001;
 
@@ -14,10 +20,14 @@ const SNAP_THRESHOLD = 8;
 const GUIDE_COLOR = '#2f9f7a';
 const GUIDE_DASH = [4, 4];
 
+/** Magic id we use to recognise the background image inside fabric events. */
+const BACKGROUND_ID = '__mint_background__';
+
 export class FabricAdapter {
   private canvas: fabric.Canvas;
   private onSelectionChange: SelectionCallback | null = null;
   private onObjectModified: ModifiedCallback | null = null;
+  private onBackgroundTransform: BackgroundTransformCallback | null = null;
   private objectMap = new Map<string, fabric.FabricObject>();
   /**
    * Reverse lookup: fabric object → layer id. Avoids the O(n) scan in
@@ -75,6 +85,15 @@ export class FabricAdapter {
       if (this.syncing || !this.currentPreset) return;
       const obj = e.target;
       if (!obj) return;
+      // Don't try to snap-to-center the background image — it's almost
+      // always larger than the canvas (cover fit) and the user is moving
+      // it deliberately. Snap guides on bg drag would be jittery noise.
+      if (
+        (obj as fabric.FabricObject & { _mintId?: string })._mintId ===
+        BACKGROUND_ID
+      ) {
+        return;
+      }
       this.snapToCenter(obj);
     });
 
@@ -83,6 +102,25 @@ export class FabricAdapter {
       this.clearGuideLines();
       const obj = e.target;
       if (!obj) return;
+
+      // Background image branch — emit a transform-change callback so the
+      // store can persist the new x/y/scale. The bg image carries the
+      // `BACKGROUND_ID` marker; only fall through to layer handling if
+      // this isn't the background.
+      if (
+        this.backgroundImage &&
+        (obj as fabric.FabricObject & { _mintId?: string })._mintId ===
+          BACKGROUND_ID
+      ) {
+        const scaleX = obj.scaleX ?? 1;
+        this.onBackgroundTransform?.({
+          x: Math.round(obj.left ?? 0),
+          y: Math.round(obj.top ?? 0),
+          scale: Number(scaleX.toFixed(4)),
+        });
+        return;
+      }
+
       const layerId = this.getLayerIdFromObject(obj);
       if (!layerId) return;
 
@@ -196,9 +234,11 @@ export class FabricAdapter {
   setCallbacks(
     onSelectionChange: SelectionCallback,
     onObjectModified: ModifiedCallback,
+    onBackgroundTransform?: BackgroundTransformCallback,
   ): void {
     this.onSelectionChange = onSelectionChange;
     this.onObjectModified = onObjectModified;
+    this.onBackgroundTransform = onBackgroundTransform ?? null;
   }
 
   private getLayerIdFromObject(obj: fabric.FabricObject): string | null {
@@ -219,7 +259,7 @@ export class FabricAdapter {
     const preset = getPresetById(doc.presetId);
 
     this.canvas.backgroundColor = doc.background.color || '#e8f5ee';
-    this.syncBackground(doc.background.dataUrl, doc.background.fit, preset);
+    this.syncBackground(doc.background, preset);
     this.syncLayers(doc.layers);
     this.syncSelection(selectedLayerId);
 
@@ -228,10 +268,11 @@ export class FabricAdapter {
   }
 
   private syncBackground(
-    dataUrl: string | null,
-    fit: 'contain' | 'cover',
+    background: EditorDocument['background'],
     preset: CanvasPreset,
   ): void {
+    const { dataUrl, fit, manual } = background;
+
     if (!dataUrl) {
       if (this.backgroundImage) {
         this.canvas.remove(this.backgroundImage);
@@ -246,12 +287,12 @@ export class FabricAdapter {
     }
 
     // Short-circuit when the dataURL matches the currently-loaded image —
-    // only the fit may have changed, no need to decode again.
+    // only the fit / manual transform may have changed, no need to decode again.
     if (
       this.backgroundImage &&
       this.backgroundImageSources.get(this.backgroundImage) === dataUrl
     ) {
-      this.applyBackgroundFit(this.backgroundImage, fit, preset);
+      this.applyBackgroundTransform(this.backgroundImage, fit, preset, manual);
       return;
     }
 
@@ -270,14 +311,34 @@ export class FabricAdapter {
     imgElement.onload = () => {
       if (dispatchedVersion !== this.bgLoadVersion) return;
       const fabricImg = new fabric.FabricImage(imgElement, {
-        selectable: false,
-        evented: false,
+        // Draggable + scalable on the canvas so the user can frame the
+        // photo by hand. Corner controls do uniform scale via `lockUniScaling`;
+        // rotation is intentionally disabled (we don't store rotation in
+        // BackgroundData) and the image can't be deleted from the canvas.
+        selectable: true,
+        evented: true,
+        hasRotatingPoint: false,
+        lockRotation: true,
+        lockUniScaling: true,
         originX: 'left',
         originY: 'top',
       });
+      // Marker so `object:modified` can tell bg from layer text without an
+      // O(n) scan.
+      (fabricImg as fabric.FabricObject & { _mintId?: string })._mintId =
+        BACKGROUND_ID;
+      // Hide the top-middle / left-middle / right-middle / bottom-middle
+      // handles — the bg only resizes uniformly from corners.
+      fabricImg.setControlsVisibility({
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: false,
+      });
       this.backgroundImageSources.set(fabricImg, dataUrl);
       this.backgroundImage = fabricImg;
-      this.applyBackgroundFit(fabricImg, fit, preset);
+      this.applyBackgroundTransform(fabricImg, fit, preset, manual);
       this.canvas.insertAt(0, fabricImg);
       this.canvas.requestRenderAll();
     };
@@ -290,27 +351,42 @@ export class FabricAdapter {
     };
   }
 
-  private applyBackgroundFit(
+  /**
+   * Apply either the manual override or the fit-derived auto layout to
+   * the background image. Manual wins when set.
+   */
+  private applyBackgroundTransform(
     img: fabric.FabricImage,
     fit: 'contain' | 'cover',
     preset: CanvasPreset,
+    manual: BackgroundTransform | null | undefined,
   ): void {
+    if (manual) {
+      img.set({
+        scaleX: manual.scale,
+        scaleY: manual.scale,
+        left: manual.x,
+        top: manual.y,
+      });
+      img.setCoords();
+      return;
+    }
+
     const imgW = img.width ?? 1;
     const imgH = img.height ?? 1;
-
     let scale: number;
     if (fit === 'contain') {
       scale = Math.min(preset.width / imgW, preset.height / imgH);
     } else {
       scale = Math.max(preset.width / imgW, preset.height / imgH);
     }
-
     img.set({
       scaleX: scale,
       scaleY: scale,
       left: (preset.width - imgW * scale) / 2,
       top: (preset.height - imgH * scale) / 2,
     });
+    img.setCoords();
   }
 
   private syncLayers(layers: readonly TextLayerData[]): void {
