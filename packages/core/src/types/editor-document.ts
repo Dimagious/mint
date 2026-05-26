@@ -45,10 +45,31 @@ export interface TextLayerData {
   readonly locked: boolean;
 }
 
+export interface BackgroundTransform {
+  /** Top-left x of the image, in canvas pixels. */
+  readonly x: number;
+  /** Top-left y of the image, in canvas pixels. */
+  readonly y: number;
+  /** Uniform scale applied to the original image dimensions. */
+  readonly scale: number;
+}
+
 export interface BackgroundData {
   readonly dataUrl: string | null;
+  /**
+   * Auto-fit strategy applied when no manual transform is set. When the
+   * user drags or zooms the photo on the canvas the result is recorded
+   * in `manual`; the fit field then only matters for the "Reset" path
+   * and for the first paint when an image is first dropped.
+   */
   readonly fit: 'contain' | 'cover';
   readonly color: string;
+  /**
+   * Manual position + scale of the background image. When set, the
+   * editor honours this instead of the `fit`-derived layout. Toggling
+   * the Crop/Fit button clears this, returning the photo to auto-fit.
+   */
+  readonly manual?: BackgroundTransform | null;
 }
 
 export interface EditorDocument {
