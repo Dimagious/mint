@@ -19,7 +19,10 @@ export const PALETTE = {
   // text
   text: '#1A1D1B',
   text2: '#5E6764',
-  text3: '#8A938F',
+  // `text3` was '#8A938F' which sits at ~3.0:1 against the page background
+  // and missed WCAG AA. Darken it to '#6F7873' (~4.6:1) — still reads as
+  // "disabled" next to text/text2 but passes contrast for body-size copy.
+  text3: '#6F7873',
   // border hairlines
   border: 'rgba(0, 0, 0, 0.07)',
   borderStrong: 'rgba(0, 0, 0, 0.12)',
@@ -31,6 +34,8 @@ export const PALETTE = {
   // danger
   danger: '#E26D5C',
   danger50: '#FBEAE6',
+  /** Focus ring colour — mint at full saturation so it reads on any surface. */
+  focusRing: '#1F7459',
 } as const;
 
 export const SHADOWS = {
@@ -105,6 +110,17 @@ export const theme = createTheme({
         },
         // tabular numerics utility class for chips, sizes, etc.
         '.tnum': { fontVariantNumeric: 'tabular-nums' },
+        // Global :focus-visible ring — mint by default, never the browser
+        // default blue (which clashes with the brand). Only fires for
+        // keyboard focus so mouse users don't see a ring on every click.
+        '*:focus-visible': {
+          outline: `2px solid ${PALETTE.focusRing}`,
+          outlineOffset: '2px',
+          borderRadius: '4px',
+        },
+        // Suppress the focus ring inside MUI's own ripple-based focus
+        // (button focus is handled by MUI's own indicator).
+        '.MuiButtonBase-root:focus-visible': { outline: 'none' },
       },
     },
     MuiAppBar: {

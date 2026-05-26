@@ -99,7 +99,21 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
       ref={drag?.setRootRef}
       style={drag?.rootStyle}
       data-testid={`layer-item-${layer.id}`}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        // Don't hijack keyboard reorder — dnd-kit's KeyboardSensor uses
+        // Space too. The drag handle's listeners run first (and call
+        // preventDefault when picking up the layer); when no drag is in
+        // flight, Enter/Space activate the row's selection.
+        if (e.defaultPrevented) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       sx={{
         position: 'relative',
         display: 'flex',

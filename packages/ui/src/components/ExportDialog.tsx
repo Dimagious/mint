@@ -96,8 +96,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ pb: 0.5 }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      aria-labelledby="export-dialog-title"
+    >
+      <DialogTitle id="export-dialog-title" sx={{ pb: 0.5 }}>
         {t('export.title')}
         <Typography
           variant="body2"

@@ -73,8 +73,9 @@ export const ShortcutsDialog: React.FC<ShortcutsDialogProps> = ({
       maxWidth="sm"
       fullWidth
       data-testid="shortcuts-dialog"
+      aria-labelledby="shortcuts-dialog-title"
     >
-      <DialogTitle sx={{ pr: 6 }}>
+      <DialogTitle id="shortcuts-dialog-title" sx={{ pr: 6 }}>
         {t('shortcuts.title')}
         <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
           {t('shortcuts.subtitle')}

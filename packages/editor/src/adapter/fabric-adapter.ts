@@ -19,8 +19,27 @@ export class FabricAdapter {
   private onSelectionChange: SelectionCallback | null = null;
   private onObjectModified: ModifiedCallback | null = null;
   private objectMap = new Map<string, fabric.FabricObject>();
+  /**
+   * Reverse lookup: fabric object → layer id. Avoids the O(n) scan in
+   * `getLayerIdFromObject` on every selection/modified event.
+   */
+  private objectToId = new WeakMap<fabric.FabricObject, string>();
   private layerMap = new Map<string, TextLayerData>();
   private backgroundImage: fabric.FabricImage | null = null;
+  /**
+   * Tracks the dataURL the current `backgroundImage` was loaded from, so a
+   * re-sync with the same dataURL can short-circuit. Kept as a WeakMap so
+   * we don't graft a private field onto a fabric-owned object (the old
+   * `obj as { _dataUrl?: string }` cast).
+   */
+  private backgroundImageSources = new WeakMap<fabric.FabricImage, string>();
+  /**
+   * Monotonic version stamp for the async background load. When the user
+   * swaps backgrounds quickly the older Image's `onload` may fire after
+   * the newer load has already settled; we compare the version at
+   * dispatch time vs at completion to drop the stale result.
+   */
+  private bgLoadVersion = 0;
   private syncing = false;
   private guideLines: fabric.Line[] = [];
   private currentPreset: CanvasPreset | null = null;
@@ -183,10 +202,7 @@ export class FabricAdapter {
   }
 
   private getLayerIdFromObject(obj: fabric.FabricObject): string | null {
-    for (const [id, o] of this.objectMap) {
-      if (o === obj) return id;
-    }
-    return null;
+    return this.objectToId.get(obj) ?? null;
   }
 
   setDimensions(preset: CanvasPreset, scale: number): void {
@@ -219,15 +235,21 @@ export class FabricAdapter {
     if (!dataUrl) {
       if (this.backgroundImage) {
         this.canvas.remove(this.backgroundImage);
+        this.backgroundImageSources.delete(this.backgroundImage);
         this.backgroundImage = null;
       }
+      // Bump the version so any in-flight load resolves to a stale check
+      // and drops the result (otherwise it would re-add the image after
+      // the user cleared the background).
+      this.bgLoadVersion += 1;
       return;
     }
 
+    // Short-circuit when the dataURL matches the currently-loaded image —
+    // only the fit may have changed, no need to decode again.
     if (
       this.backgroundImage &&
-      (this.backgroundImage as fabric.FabricObject & { _dataUrl?: string })
-        ._dataUrl === dataUrl
+      this.backgroundImageSources.get(this.backgroundImage) === dataUrl
     ) {
       this.applyBackgroundFit(this.backgroundImage, fit, preset);
       return;
@@ -235,25 +257,36 @@ export class FabricAdapter {
 
     if (this.backgroundImage) {
       this.canvas.remove(this.backgroundImage);
+      this.backgroundImageSources.delete(this.backgroundImage);
     }
 
+    // Race-guard: capture the version at dispatch and drop the result if
+    // a newer load has started (or the bg was cleared) by the time the
+    // browser finishes decoding this dataURL.
+    this.bgLoadVersion += 1;
+    const dispatchedVersion = this.bgLoadVersion;
     const imgElement = new Image();
     imgElement.src = dataUrl;
     imgElement.onload = () => {
+      if (dispatchedVersion !== this.bgLoadVersion) return;
       const fabricImg = new fabric.FabricImage(imgElement, {
         selectable: false,
         evented: false,
         originX: 'left',
         originY: 'top',
       });
-
-      (fabricImg as fabric.FabricObject & { _dataUrl?: string })._dataUrl =
-        dataUrl;
-
+      this.backgroundImageSources.set(fabricImg, dataUrl);
       this.backgroundImage = fabricImg;
       this.applyBackgroundFit(fabricImg, fit, preset);
       this.canvas.insertAt(0, fabricImg);
       this.canvas.requestRenderAll();
+    };
+    imgElement.onerror = () => {
+      // Failed to decode — clear the version stamp so subsequent valid
+      // loads aren't accidentally dropped by the staleness check.
+      if (dispatchedVersion === this.bgLoadVersion) {
+        this.bgLoadVersion += 1;
+      }
     };
   }
 
@@ -287,6 +320,7 @@ export class FabricAdapter {
       if (!currentIds.has(id)) {
         this.canvas.remove(obj);
         this.objectMap.delete(id);
+        this.objectToId.delete(obj);
         this.layerMap.delete(id);
       }
     }
@@ -304,6 +338,7 @@ export class FabricAdapter {
           originY: 'top',
         });
         this.objectMap.set(layer.id, textbox);
+        this.objectToId.set(textbox, layer.id);
         this.canvas.add(textbox);
         obj = textbox;
       }
@@ -433,6 +468,8 @@ export class FabricAdapter {
     this.canvas.dispose();
     this.objectMap.clear();
     this.layerMap.clear();
+    // Bump the bg version so any in-flight `<img>.onload` aborts.
+    this.bgLoadVersion += 1;
     this.backgroundImage = null;
     this.currentPreset = null;
   }

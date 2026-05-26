@@ -110,4 +110,95 @@ describe('CommandHistory', () => {
     expect(afterUndo.layers[0]?.text).toBe('A');
     expect(afterUndo.layers[1]?.text).toBe('B');
   });
+
+  it('caps the undo stack at the configured size', () => {
+    // Use a clock that jumps far beyond the coalesce window between calls so
+    // each command pushes a fresh entry instead of merging.
+    let nowMs = 0;
+    const history = new CommandHistory({
+      cap: 3,
+      now: () => {
+        nowMs += 10_000;
+        return nowMs;
+      },
+    });
+    const a = createTextLayer({ text: 'A' });
+    let doc: EditorDocument = makeDoc(a);
+
+    for (let i = 0; i < 5; i++) {
+      doc = history.execute(
+        new UpdateTextLayerCommand(a.id, { text: `v${i}` }),
+        doc,
+      );
+    }
+    expect(history.size).toBe(3);
+    expect(doc.layers[0]?.text).toBe('v4');
+  });
+
+  it('coalesces consecutive UpdateTextLayer commands on the same layer', () => {
+    let nowMs = 1000;
+    const history = new CommandHistory({ now: () => nowMs });
+    const a = createTextLayer({ text: 'A' });
+    let doc: EditorDocument = makeDoc(a);
+
+    // Three font-size ticks 50 ms apart — should merge into a single entry.
+    doc = history.execute(
+      new UpdateTextLayerCommand(a.id, {
+        style: { ...a.style, fontSize: 100 },
+      }),
+      doc,
+    );
+    nowMs += 50;
+    doc = history.execute(
+      new UpdateTextLayerCommand(a.id, {
+        style: { ...a.style, fontSize: 110 },
+      }),
+      doc,
+    );
+    nowMs += 50;
+    doc = history.execute(
+      new UpdateTextLayerCommand(a.id, {
+        style: { ...a.style, fontSize: 120 },
+      }),
+      doc,
+    );
+
+    expect(history.size).toBe(1);
+    expect(doc.layers[0]?.style.fontSize).toBe(120);
+
+    // One undo should restore the original font size, not just the last tick.
+    const undone = history.undo(doc);
+    expect(undone.layers[0]?.style.fontSize).toBe(a.style.fontSize);
+  });
+
+  it('does not coalesce updates on different layers', () => {
+    const history = new CommandHistory();
+    const a = createTextLayer({ text: 'A' });
+    const b = createTextLayer({ text: 'B' });
+    let doc: EditorDocument = makeDoc(a, b);
+
+    doc = history.execute(
+      new UpdateTextLayerCommand(a.id, { text: 'A2' }),
+      doc,
+    );
+    history.execute(new UpdateTextLayerCommand(b.id, { text: 'B2' }), doc);
+
+    expect(history.size).toBe(2);
+  });
+
+  it('does not coalesce updates outside the coalesce window', () => {
+    let nowMs = 1000;
+    const history = new CommandHistory({ now: () => nowMs });
+    const a = createTextLayer({ text: 'A' });
+    let doc: EditorDocument = makeDoc(a);
+
+    doc = history.execute(
+      new UpdateTextLayerCommand(a.id, { text: 'A2' }),
+      doc,
+    );
+    nowMs += 5000; // far outside the 300ms window
+    history.execute(new UpdateTextLayerCommand(a.id, { text: 'A3' }), doc);
+
+    expect(history.size).toBe(2);
+  });
 });

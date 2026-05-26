@@ -18,8 +18,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
-import { LayerListItem } from '@mint/ui';
-import { readFileAsDataUrl } from '@mint/utils';
+import { ColorChip, LayerListItem } from '@mint/ui';
+import { readImageFileSafely, ImageRejectedError } from '@mint/utils';
 import type { TextLayerData } from '@mint/core';
 import {
   DndContext,
@@ -45,6 +45,8 @@ interface LayersPanelProps {
   /** Used by the desktop top bar safe-zones toggle when it lives here (BRIEF §4.2 §3). */
   showSafeZones?: boolean;
   onToggleSafeZones?: (v: boolean) => void;
+  /** Surfaced when the upload input rejects a file (MIME/size/magic check). */
+  onImageRejected?: (code: ImageRejectedError['code']) => void;
 }
 
 /**
@@ -57,6 +59,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   mobile = false,
   showSafeZones,
   onToggleSafeZones,
+  onImageRejected,
 }) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -104,14 +107,20 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
       if (!file) return;
       setUploading(true);
       try {
-        const dataUrl = await readFileAsDataUrl(file);
+        const dataUrl = await readImageFileSafely(file);
         setBackground({ ...doc.background, dataUrl });
+      } catch (err) {
+        if (err instanceof ImageRejectedError) {
+          onImageRejected?.(err.code);
+        } else {
+          throw err;
+        }
       } finally {
         setUploading(false);
         e.target.value = '';
       }
     },
-    [setBackground, doc.background],
+    [setBackground, doc.background, onImageRejected],
   );
 
   const reversed = [...doc.layers].reverse();
@@ -223,20 +232,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
             {t('layers.bgColor')}
           </Typography>
-          <input
-            type="color"
+          <ColorChip
             value={doc.background.color || '#e8f5ee'}
-            onChange={(e) =>
-              setBackground({ ...doc.background, color: e.target.value })
-            }
-            style={{
-              width: '100%',
-              height: 32,
-              padding: 0,
-              border: '1px solid rgba(0,0,0,.07)',
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}
+            onChange={(color) => setBackground({ ...doc.background, color })}
           />
           {doc.background.dataUrl && (
             <Typography

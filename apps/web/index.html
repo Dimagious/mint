@@ -3,6 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content Security Policy — defence-in-depth for a browser-only app.
+      * default-src 'self'       — no third-party origins by default.
+      * script-src 'self'        — only our bundled JS may execute. Inline
+                                   scripts are blocked entirely (Vite emits
+                                   external modules, not inline ones).
+      * style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
+                                 — MUI + emotion require inline styles for
+                                   theming; Google Fonts is the on-demand
+                                   font loader used by `packages/ui/fonts.ts`.
+      * img-src 'self' data: blob:
+                                 — user-supplied background images come
+                                   through as data: URLs after the upload
+                                   validation pipeline; blob: covers the
+                                   export download URL.
+      * font-src 'self' https://fonts.gstatic.com
+                                 — Google Fonts' static asset host.
+      * connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com
+      * object-src 'none'        — no <object>/<embed>.
+      * base-uri 'self'          — <base> can't be hijacked.
+      * form-action 'self'       — no forms post to third parties.
+
+      Note: `frame-ancestors` is intentionally omitted here — browsers
+      ignore it when CSP is delivered via <meta>. GitHub Pages doesn't
+      let us send HTTP headers; clickjacking is mitigated at the
+      application level (no auth, no sensitive forms) for now.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>MINT — Merge Image 'N Text</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   </head>

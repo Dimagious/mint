@@ -1,18 +1,10 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Autocomplete,
   Box,
   Button,
   IconButton,
-  InputAdornment,
   MenuItem,
-  Popover,
   Select,
   Stack,
   Switch,
@@ -22,6 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { ColorChip, normalizeHex } from './ColorChip';
 import {
   FormatAlignLeft,
   FormatAlignCenter,
@@ -802,197 +795,6 @@ const NumberSlider: React.FC<NumberSliderProps> = ({
 };
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* Color chip with popover picker (BRIEF §5.2)                                 */
-/* ────────────────────────────────────────────────────────────────────────── */
-
-const PRESET_COLORS = [
-  '#1A1D1B',
-  '#5E6764',
-  '#FFFFFF',
-  '#2F9F7A',
-  '#1F7459',
-  '#E26D5C',
-  '#E4B061',
-  '#3F88C5',
-  '#7E5BEF',
-  '#D85F9B',
-];
-const RECENT_KEY = 'mint:recent-colors';
-
-const ColorChip: React.FC<{
-  value: string;
-  onChange: (hex: string) => void;
-}> = ({ value, onChange }) => {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const recent = useMemo<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  }, [anchor]); // refresh on open
-
-  const commit = (hex: string) => {
-    onChange(hex);
-    try {
-      const next = [
-        hex,
-        ...recent.filter((c) => c.toLowerCase() !== hex.toLowerCase()),
-      ].slice(0, 8);
-      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
-
-  return (
-    <>
-      <Box
-        role="button"
-        tabIndex={0}
-        onClick={(e) => setAnchor(e.currentTarget)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ')
-            setAnchor(e.currentTarget as HTMLElement);
-        }}
-        sx={(theme) => ({
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 1,
-          height: 32,
-          px: '8px',
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: '8px',
-          cursor: 'pointer',
-          background: theme.palette.background.paper,
-          '&:hover': { borderColor: theme.palette.text.secondary },
-        })}
-        data-testid="color-chip"
-      >
-        <Box
-          sx={{
-            width: 16,
-            height: 16,
-            borderRadius: '5px',
-            bgcolor: value,
-            border: '1px solid rgba(0,0,0,.1)',
-          }}
-        />
-        <Typography
-          className="tnum"
-          sx={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 11.5,
-          }}
-        >
-          {value.toUpperCase()}
-        </Typography>
-      </Box>
-
-      <Popover
-        anchorEl={anchor}
-        open={Boolean(anchor)}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-        slotProps={{
-          paper: {
-            sx: {
-              mt: 0.75,
-              p: 1.5,
-              width: 240,
-              boxShadow: '0 4px 12px rgba(0,0,0,.1)',
-            },
-          },
-        }}
-      >
-        <TextField
-          fullWidth
-          size="small"
-          value={value}
-          onChange={(e) => commit(normalizeHex(e.target.value, value))}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <input
-                  type="color"
-                  value={normalizeHex(value, '#000000')}
-                  onChange={(e) => commit(e.target.value)}
-                  style={{
-                    width: 22,
-                    height: 22,
-                    border: 0,
-                    padding: 0,
-                    background: 'transparent',
-                    cursor: 'pointer',
-                  }}
-                />
-              </InputAdornment>
-            ),
-            sx: {
-              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: 12.5,
-            },
-          }}
-        />
-
-        {recent.length > 0 && (
-          <Swatches title="recentColors" colors={recent} onPick={commit} />
-        )}
-        <Swatches title="presetColors" colors={PRESET_COLORS} onPick={commit} />
-      </Popover>
-    </>
-  );
-};
-
-const Swatches: React.FC<{
-  title: 'recentColors' | 'presetColors';
-  colors: string[];
-  onPick: (c: string) => void;
-}> = ({ title, colors, onPick }) => {
-  const { t } = useTranslation();
-  return (
-    <Box sx={{ mt: 1.25 }}>
-      <Typography
-        sx={{
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: '0.05em',
-          color: 'text.disabled',
-          textTransform: 'uppercase',
-          mb: 0.75,
-        }}
-      >
-        {t(`style.${title}`)}
-      </Typography>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(8, 1fr)',
-          gap: 0.75,
-        }}
-      >
-        {colors.map((c) => (
-          <Box
-            key={c}
-            role="button"
-            tabIndex={0}
-            onClick={() => onPick(c)}
-            sx={{
-              width: 22,
-              height: 22,
-              borderRadius: '6px',
-              border: '1px solid rgba(0,0,0,.1)',
-              bgcolor: c,
-              cursor: 'pointer',
-            }}
-          />
-        ))}
-      </Box>
-    </Box>
-  );
-};
-
-/* ────────────────────────────────────────────────────────────────────────── */
 /* EffectCard — card with on/off toggle in the header                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -1031,33 +833,3 @@ const EffectCard: React.FC<{
     )}
   </Box>
 );
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Utils                                                                       */
-/* ────────────────────────────────────────────────────────────────────────── */
-
-function byteToHex(value: number): string {
-  const c = Math.max(0, Math.min(255, Math.round(value)));
-  return c.toString(16).padStart(2, '0');
-}
-
-export function normalizeHex(input: string, fallback: string): string {
-  const full = input.match(/^#([a-f0-9]{6})$/i);
-  if (full) return `#${full[1]!.toLowerCase()}`;
-  const short = input.match(/^#([a-f0-9]{3})$/i);
-  if (short) {
-    const [r, g, b] = short[1]!.toLowerCase().split('');
-    return `#${r}${r}${g}${g}${b}${b}`;
-  }
-  const rgb = input.match(/^rgba?\(([^)]+)\)$/i);
-  if (rgb) {
-    const channels = rgb[1]!
-      .split(',')
-      .slice(0, 3)
-      .map((x) => Number.parseFloat(x.trim()));
-    if (channels.length === 3 && channels.every(Number.isFinite)) {
-      return `#${byteToHex(channels[0]!)}${byteToHex(channels[1]!)}${byteToHex(channels[2]!)}`;
-    }
-  }
-  return fallback;
-}
