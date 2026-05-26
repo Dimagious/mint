@@ -37,8 +37,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import type { EditorDocument, ExportOptions } from '@mint/core';
-import { ExportDialog } from '@mint/ui';
-import mintPrimaryLogo from './assets/mint-logo-primary.png';
+import { ExportDialog, MintMark } from '@mint/ui';
 import { CanvasPanel, CanvasPanelHandle } from './components/CanvasPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LayersPanel } from './components/LayersPanel';
@@ -343,20 +342,27 @@ export const App: React.FC = () => {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: 0.875,
                 flexShrink: 0,
                 mr: isMobile ? 0.5 : 1,
+                color: 'primary.dark',
               }}
+              aria-label="MINT"
             >
-              <Box
-                component="img"
-                src={mintPrimaryLogo}
-                alt="MINT"
-                sx={{
-                  height: isMobile ? 30 : 36,
-                  width: 'auto',
-                  display: 'block',
-                }}
-              />
+              <MintMark size={isMobile ? 24 : 28} />
+              {!isMobile && (
+                <Box
+                  component="span"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    letterSpacing: '0.06em',
+                    color: 'text.primary',
+                  }}
+                >
+                  MINT
+                </Box>
+              )}
             </Box>
 
             <ToolbarSection compact={isMobile} />
