@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -309,12 +309,10 @@ export const App: React.FC = () => {
 
   const closeOverflow = () => setOverflowAnchor(null);
 
-  /* ─── Autosave signal — anything that changes on edit ─── */
-  const autosaveSignal = useMemo(
-    () =>
-      `${doc.presetId}:${doc.layers.length}:${JSON.stringify(doc.layers.map((l) => l.id + l.text + l.style.fontSize))}:${doc.background.dataUrl ? 'bg' : 'no-bg'}`,
-    [doc],
-  );
+  // Monotonic revision counter from the store — bumped on every mutation.
+  // The AutosaveBadge subscribes to this instead of doing a JSON.stringify
+  // on `doc` per render.
+  const autosaveSignal = useEditorStore((s) => s.revision);
 
   return (
     <ErrorBoundary>

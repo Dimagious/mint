@@ -4,14 +4,9 @@ import type {
   TextLayerData,
   CanvasPresetId,
   BackgroundData,
-  ExportOptions,
 } from '@mint/core';
-import {
-  createDefaultDocument,
-  createTextLayer,
-  getPresetById,
-  generateExportFilename,
-} from '@mint/core';
+import { createDefaultDocument, createTextLayer } from '@mint/core';
+import type { Command } from '../commands/command';
 import { CommandHistory } from '../commands/command-history';
 import { AddTextLayerCommand } from '../commands/add-text-layer-command';
 import { RemoveTextLayerCommand } from '../commands/remove-text-layer-command';
@@ -27,10 +22,18 @@ export interface EditorState {
   canUndo: boolean;
   canRedo: boolean;
   clipboard: Omit<TextLayerData, 'id'> | null;
+  /**
+   * Monotonic counter bumped on every mutation. Consumers that need a
+   * cheap "did anything change" signal (e.g. the autosave badge) should
+   * subscribe to this instead of doing a JSON.stringify(doc) on each
+   * render.
+   */
+  revision: number;
 
   setPreset: (presetId: CanvasPresetId) => void;
   setBackground: (background: BackgroundData) => void;
-  addTextLayer: (overrides?: Partial<Omit<TextLayerData, 'id'>>) => void;
+  /** Returns the id of the newly created layer so the caller can select it. */
+  addTextLayer: (overrides?: Partial<Omit<TextLayerData, 'id'>>) => string;
   removeTextLayer: (layerId: string) => void;
   updateTextLayer: (
     layerId: string,
@@ -46,197 +49,149 @@ export interface EditorState {
   undo: () => void;
   redo: () => void;
   loadDocument: (doc: EditorDocument) => void;
-  exportCanvas: (
-    canvas: HTMLCanvasElement,
-    options: ExportOptions,
-  ) => Promise<void>;
 }
 
+// Module-scope singleton so the command history survives Zustand setState
+// rerenders. Tests that need an isolated history can use `__resetHistoryForTests`.
 const history = new CommandHistory();
 
-export const useEditorStore = create<EditorState>((set, get) => ({
-  document: createDefaultDocument(),
-  selectedLayerId: null,
-  canUndo: false,
-  canRedo: false,
-  clipboard: null,
+/** Test-only: reset the in-memory command history. */
+export function __resetHistoryForTests(): void {
+  history.clear();
+}
 
-  setPreset: (presetId) => {
-    const cmd = new ChangePresetCommand(presetId);
-    const newDoc = history.execute(cmd, get().document);
-    set({
+export const useEditorStore = create<EditorState>((set, get) => {
+  /**
+   * Run a Command through the shared history and propagate the resulting
+   * document + history flags into the store. Accepts optional `extra`
+   * state that the caller wants to update atomically (e.g. clearing
+   * `selectedLayerId` when the layer is removed).
+   */
+  function runCommand(
+    command: Command,
+    extra?: Partial<EditorState>,
+  ): EditorDocument {
+    const newDoc = history.execute(command, get().document);
+    set((s) => ({
+      ...s,
+      ...extra,
       document: newDoc,
       canUndo: history.canUndo,
       canRedo: history.canRedo,
-    });
-  },
+      revision: s.revision + 1,
+    }));
+    return newDoc;
+  }
 
-  setBackground: (background) => {
-    const cmd = new SetBackgroundCommand(background);
-    const newDoc = history.execute(cmd, get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+  return {
+    document: createDefaultDocument(),
+    selectedLayerId: null,
+    canUndo: false,
+    canRedo: false,
+    clipboard: null,
+    revision: 0,
 
-  addTextLayer: (overrides) => {
-    const layer = createTextLayer(overrides);
-    const cmd = new AddTextLayerCommand(layer);
-    const newDoc = history.execute(cmd, get().document);
-    set({
-      document: newDoc,
-      selectedLayerId: layer.id,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+    setPreset: (presetId) => {
+      runCommand(new ChangePresetCommand(presetId));
+    },
 
-  removeTextLayer: (layerId) => {
-    const cmd = new RemoveTextLayerCommand(layerId);
-    const newDoc = history.execute(cmd, get().document);
-    const state = get();
-    set({
-      document: newDoc,
-      selectedLayerId:
-        state.selectedLayerId === layerId ? null : state.selectedLayerId,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+    setBackground: (background) => {
+      runCommand(new SetBackgroundCommand(background));
+    },
 
-  updateTextLayer: (layerId, changes) => {
-    const cmd = new UpdateTextLayerCommand(layerId, changes);
-    const newDoc = history.execute(cmd, get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+    addTextLayer: (overrides) => {
+      const layer = createTextLayer(overrides);
+      runCommand(new AddTextLayerCommand(layer), { selectedLayerId: layer.id });
+      return layer.id;
+    },
 
-  reorderLayer: (layerId, direction) => {
-    const cmd = new ReorderLayerCommand(layerId, direction);
-    const newDoc = history.execute(cmd, get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+    removeTextLayer: (layerId) => {
+      const extra =
+        get().selectedLayerId === layerId ? { selectedLayerId: null } : {};
+      runCommand(new RemoveTextLayerCommand(layerId), extra);
+    },
 
-  reorderLayerToIndex: (layerId, newIndex) => {
-    const cmd = new ReorderLayerToIndexCommand(layerId, newIndex);
-    const newDoc = history.execute(cmd, get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
+    updateTextLayer: (layerId, changes) => {
+      runCommand(new UpdateTextLayerCommand(layerId, changes));
+    },
 
-  selectLayer: (layerId) => {
-    set({ selectedLayerId: layerId });
-  },
+    reorderLayer: (layerId, direction) => {
+      runCommand(new ReorderLayerCommand(layerId, direction));
+    },
 
-  duplicateLayer: (layerId) => {
-    const state = get();
-    const source = state.document.layers.find((l) => l.id === layerId);
-    if (!source) return;
-    const { id: _, ...rest } = source;
-    state.addTextLayer({ ...rest, x: rest.x + 20, y: rest.y + 20 });
-  },
+    reorderLayerToIndex: (layerId, newIndex) => {
+      runCommand(new ReorderLayerToIndexCommand(layerId, newIndex));
+    },
 
-  copyLayer: () => {
-    const state = get();
-    if (!state.selectedLayerId) return;
-    const source = state.document.layers.find(
-      (l) => l.id === state.selectedLayerId,
-    );
-    if (!source) return;
-    const { id: _, ...rest } = source;
-    set({ clipboard: rest });
-  },
+    selectLayer: (layerId) => {
+      set({ selectedLayerId: layerId });
+    },
 
-  pasteLayer: () => {
-    const state = get();
-    if (!state.clipboard) return;
-    state.addTextLayer({
-      ...state.clipboard,
-      x: state.clipboard.x + 20,
-      y: state.clipboard.y + 20,
-    });
-  },
+    duplicateLayer: (layerId) => {
+      const state = get();
+      const source = state.document.layers.find((l) => l.id === layerId);
+      if (!source) return;
+      const { id: _unused, ...rest } = source;
+      state.addTextLayer({ ...rest, x: rest.x + 20, y: rest.y + 20 });
+    },
 
-  deleteSelectedLayer: () => {
-    const state = get();
-    if (state.selectedLayerId) {
-      state.removeTextLayer(state.selectedLayerId);
-    }
-  },
-
-  undo: () => {
-    const newDoc = history.undo(get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
-
-  redo: () => {
-    const newDoc = history.redo(get().document);
-    set({
-      document: newDoc,
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
-    });
-  },
-
-  loadDocument: (doc) => {
-    history.clear();
-    set({
-      document: doc,
-      selectedLayerId: null,
-      canUndo: false,
-      canRedo: false,
-    });
-  },
-
-  exportCanvas: async (canvas, options) => {
-    const { document: doc } = get();
-    const preset = getPresetById(doc.presetId);
-
-    const exportCanvas = window.document.createElement('canvas');
-    exportCanvas.width = preset.width;
-    exportCanvas.height = preset.height;
-    const ctx = exportCanvas.getContext('2d');
-    if (!ctx) throw new Error('Failed to get canvas context');
-
-    ctx.drawImage(canvas, 0, 0, preset.width, preset.height);
-
-    const mimeType = options.format === 'jpeg' ? 'image/jpeg' : 'image/png';
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      exportCanvas.toBlob(
-        (b) => {
-          if (b) resolve(b);
-          else reject(new Error('Failed to create blob'));
-        },
-        mimeType,
-        options.format === 'jpeg' ? options.quality / 100 : undefined,
+    copyLayer: () => {
+      const state = get();
+      if (!state.selectedLayerId) return;
+      const source = state.document.layers.find(
+        (l) => l.id === state.selectedLayerId,
       );
-    });
+      if (!source) return;
+      const { id: _unused, ...rest } = source;
+      set({ clipboard: rest });
+    },
 
-    const filename = generateExportFilename(options.format);
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  },
-}));
+    pasteLayer: () => {
+      const state = get();
+      if (!state.clipboard) return;
+      state.addTextLayer({
+        ...state.clipboard,
+        x: state.clipboard.x + 20,
+        y: state.clipboard.y + 20,
+      });
+    },
+
+    deleteSelectedLayer: () => {
+      const state = get();
+      if (state.selectedLayerId) {
+        state.removeTextLayer(state.selectedLayerId);
+      }
+    },
+
+    undo: () => {
+      const newDoc = history.undo(get().document);
+      set((s) => ({
+        document: newDoc,
+        canUndo: history.canUndo,
+        canRedo: history.canRedo,
+        revision: s.revision + 1,
+      }));
+    },
+
+    redo: () => {
+      const newDoc = history.redo(get().document);
+      set((s) => ({
+        document: newDoc,
+        canUndo: history.canUndo,
+        canRedo: history.canRedo,
+        revision: s.revision + 1,
+      }));
+    },
+
+    loadDocument: (doc) => {
+      history.clear();
+      set((s) => ({
+        document: doc,
+        selectedLayerId: null,
+        canUndo: false,
+        canRedo: false,
+        revision: s.revision + 1,
+      }));
+    },
+  };
+});
