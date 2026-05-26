@@ -6,6 +6,7 @@ import type {
   CanvasPreset,
 } from '@mint/core';
 import { getPresetById } from '@mint/core';
+import { computeSnap, DEFAULT_SNAP_THRESHOLD, type SnapBox } from './snap';
 
 type SelectionCallback = (layerId: string | null) => void;
 type ModifiedCallback = (
@@ -16,7 +17,6 @@ type BackgroundTransformCallback = (transform: BackgroundTransform) => void;
 
 const SCALE_THRESHOLD = 0.001;
 
-const SNAP_THRESHOLD = 8;
 const GUIDE_COLOR = '#2f9f7a';
 const GUIDE_DASH = [4, 4];
 
@@ -94,7 +94,7 @@ export class FabricAdapter {
       ) {
         return;
       }
-      this.snapToCenter(obj);
+      this.applySnapping(obj);
     });
 
     this.canvas.on('object:modified', (e) => {
@@ -159,69 +159,82 @@ export class FabricAdapter {
     });
   }
 
-  private snapToCenter(obj: fabric.FabricObject): void {
+  /**
+   * Figma-style smart guides — the dragged object snaps to other layers'
+   * left/center/right (and top/middle/bottom) edges, plus the canvas
+   * centerlines. Logic is in `./snap.ts` so it stays unit-testable; this
+   * method only handles the fabric ↔ pure-math glue and the guide-line
+   * rendering.
+   */
+  private applySnapping(obj: fabric.FabricObject): void {
     if (!this.currentPreset) return;
 
-    const canvasCenterX = this.currentPreset.width / 2;
-    const canvasCenterY = this.currentPreset.height / 2;
+    const draggedBox: SnapBox = {
+      x: obj.left ?? 0,
+      y: obj.top ?? 0,
+      width: (obj.width ?? 0) * (obj.scaleX ?? 1),
+      height: (obj.height ?? 0) * (obj.scaleY ?? 1),
+    };
 
-    const objCenterX =
-      (obj.left ?? 0) + ((obj.width ?? 0) * (obj.scaleX ?? 1)) / 2;
-    const objCenterY =
-      (obj.top ?? 0) + ((obj.height ?? 0) * (obj.scaleY ?? 1)) / 2;
+    // Collect snap targets from every other visible layer. Locked layers
+    // stay as reference points — locking forbids editing, not visibility,
+    // and Figma treats them the same way.
+    const others: SnapBox[] = [];
+    for (const [id, other] of this.objectMap) {
+      if (other === obj) continue;
+      const layer = this.layerMap.get(id);
+      if (!layer || !layer.visible) continue;
+      others.push({
+        x: other.left ?? 0,
+        y: other.top ?? 0,
+        width: (other.width ?? 0) * (other.scaleX ?? 1),
+        height: (other.height ?? 0) * (other.scaleY ?? 1),
+      });
+    }
+
+    const result = computeSnap(
+      draggedBox,
+      others,
+      this.currentPreset.width,
+      this.currentPreset.height,
+      DEFAULT_SNAP_THRESHOLD,
+    );
 
     this.clearGuideLines();
 
-    let snappedX = false;
-    let snappedY = false;
-
-    if (Math.abs(objCenterX - canvasCenterX) < SNAP_THRESHOLD) {
-      obj.set({
-        left: canvasCenterX - ((obj.width ?? 0) * (obj.scaleX ?? 1)) / 2,
-      });
-      snappedX = true;
+    if (result.x) {
+      obj.set({ left: (obj.left ?? 0) + result.x.delta });
+      this.guideLines.push(this.drawGuide('vertical', result.x.guide));
     }
-
-    if (Math.abs(objCenterY - canvasCenterY) < SNAP_THRESHOLD) {
-      obj.set({
-        top: canvasCenterY - ((obj.height ?? 0) * (obj.scaleY ?? 1)) / 2,
-      });
-      snappedY = true;
-    }
-
-    if (snappedX) {
-      const vLine = new fabric.Line(
-        [canvasCenterX, 0, canvasCenterX, this.currentPreset.height],
-        {
-          stroke: GUIDE_COLOR,
-          strokeWidth: 1,
-          strokeDashArray: GUIDE_DASH,
-          selectable: false,
-          evented: false,
-          excludeFromExport: true,
-        },
-      );
-      this.canvas.add(vLine);
-      this.guideLines.push(vLine);
-    }
-
-    if (snappedY) {
-      const hLine = new fabric.Line(
-        [0, canvasCenterY, this.currentPreset.width, canvasCenterY],
-        {
-          stroke: GUIDE_COLOR,
-          strokeWidth: 1,
-          strokeDashArray: GUIDE_DASH,
-          selectable: false,
-          evented: false,
-          excludeFromExport: true,
-        },
-      );
-      this.canvas.add(hLine);
-      this.guideLines.push(hLine);
+    if (result.y) {
+      obj.set({ top: (obj.top ?? 0) + result.y.delta });
+      this.guideLines.push(this.drawGuide('horizontal', result.y.guide));
     }
 
     this.canvas.requestRenderAll();
+  }
+
+  private drawGuide(
+    orientation: 'vertical' | 'horizontal',
+    coord: number,
+  ): fabric.Line {
+    if (!this.currentPreset) {
+      throw new Error('drawGuide called without a current preset');
+    }
+    const coords: [number, number, number, number] =
+      orientation === 'vertical'
+        ? [coord, 0, coord, this.currentPreset.height]
+        : [0, coord, this.currentPreset.width, coord];
+    const line = new fabric.Line(coords, {
+      stroke: GUIDE_COLOR,
+      strokeWidth: 1,
+      strokeDashArray: GUIDE_DASH,
+      selectable: false,
+      evented: false,
+      excludeFromExport: true,
+    });
+    this.canvas.add(line);
+    return line;
   }
 
   private clearGuideLines(): void {
