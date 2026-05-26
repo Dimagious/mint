@@ -23,6 +23,7 @@ import {
   Download,
   FileDownloadOutlined,
   FolderOpen,
+  HighlightOff,
   KeyboardOutlined,
   LocalCafeOutlined,
   MoreHoriz,
@@ -51,6 +52,17 @@ import type { ImageRejectedError } from '@mint/utils';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/dimagious';
 const PROJECT_STORAGE_KEY = 'mint-project';
+const AUTOSAVE_PREF_KEY = 'mint-autosave';
+
+function readAutosavePref(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = window.localStorage.getItem(AUTOSAVE_PREF_KEY);
+    return raw === null ? true : raw === '1';
+  } catch {
+    return true;
+  }
+}
 
 function isQuotaExceededError(error: unknown): boolean {
   return (
@@ -81,6 +93,9 @@ export const App: React.FC = () => {
     null,
   );
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(() =>
+    readAutosavePref(),
+  );
 
   /* ─── Store ─── */
   const canUndo = useEditorStore((s) => s.canUndo);
@@ -215,8 +230,9 @@ export const App: React.FC = () => {
     shortcutsOpen,
   ]);
 
-  /* ─── Autosave (unchanged) ─── */
+  /* ─── Autosave — respects the per-device opt-out ─── */
   useEffect(() => {
+    if (!autosaveEnabled) return;
     const timer = setTimeout(() => {
       const serialized = JSON.stringify(doc);
       try {
@@ -238,9 +254,13 @@ export const App: React.FC = () => {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [doc]);
+  }, [doc, autosaveEnabled]);
 
   useEffect(() => {
+    // On first paint, only restore a previous session if the user hasn't
+    // opted out on this device. The opt-out is persisted separately so a
+    // shared browser doesn't leak a photo to the next visitor.
+    if (!autosaveEnabled) return;
     const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
     if (saved) {
       try {
@@ -254,7 +274,35 @@ export const App: React.FC = () => {
         localStorage.removeItem(PROJECT_STORAGE_KEY);
       }
     }
-  }, [loadDocument]);
+    // Intentionally exhaustive-deps: this should only run on mount per the
+    // current `autosaveEnabled` value; later toggles shouldn't re-load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleAutosave = useCallback(() => {
+    setAutosaveEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(AUTOSAVE_PREF_KEY, next ? '1' : '0');
+        if (!next) {
+          // User just turned it off — purge the persisted document too.
+          localStorage.removeItem(PROJECT_STORAGE_KEY);
+        }
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
+
+  const clearStoredProject = useCallback(() => {
+    try {
+      localStorage.removeItem(PROJECT_STORAGE_KEY);
+      setSnackbarMsg(t('toolbar.localStorageCleared'));
+    } catch {
+      /* ignore */
+    }
+  }, [t]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -500,6 +548,33 @@ export const App: React.FC = () => {
               >
                 <KeyboardOutlined fontSize="small" sx={{ mr: 1.25 }} />
                 {t('toolbar.shortcuts')}
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  toggleAutosave();
+                  closeOverflow();
+                }}
+              >
+                <Save
+                  fontSize="small"
+                  sx={{
+                    mr: 1.25,
+                    color: autosaveEnabled ? 'primary.main' : 'inherit',
+                  }}
+                />
+                {autosaveEnabled
+                  ? t('toolbar.autosaveOn')
+                  : t('toolbar.autosaveOff')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  clearStoredProject();
+                  closeOverflow();
+                }}
+              >
+                <HighlightOff fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.localStorageClear')}
               </MenuItem>
               <Divider />
               <MenuItem

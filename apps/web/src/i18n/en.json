@@ -14,7 +14,11 @@
     "load": "Load project",
     "safeZones": "Safe zones",
     "more": "More actions",
-    "shortcuts": "Keyboard shortcuts"
+    "shortcuts": "Keyboard shortcuts",
+    "autosaveOn": "Autosave: on (this device)",
+    "autosaveOff": "Autosave: off",
+    "localStorageClear": "Clear saved data on this device",
+    "localStorageCleared": "Saved data cleared"
   },
   "autosave": {
     "saving": "Saving…",
