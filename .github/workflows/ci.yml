@@ -35,11 +35,14 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
-      - name: Unit tests
-        run: pnpm test
-
+      # `@mint/core` exports `./dist/*` — `packages/editor` vitest can't
+      # resolve it from a fresh install, so the build has to run before
+      # unit tests.
       - name: Build all packages
         run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test
 
   e2e:
     name: E2E (Playwright)

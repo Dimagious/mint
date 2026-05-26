@@ -10,6 +10,7 @@ import {
   FolderOpen,
   GridView,
   HighlightOff,
+  IosShare,
   KeyboardOutlined,
   LocalCafeOutlined,
   Lock,
@@ -38,6 +39,7 @@ interface CommandPaletteProps {
   onOpenShortcuts: () => void;
   onSaveFile: () => void;
   onLoadFile: () => void;
+  onShareLink: () => void;
 
   /* View toggles */
   safeZones: boolean;
@@ -80,6 +82,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenShortcuts,
   onSaveFile,
   onLoadFile,
+  onShareLink,
   safeZones,
   onToggleSafeZones,
   autosaveEnabled,
@@ -184,6 +187,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         keywords: 'project json open import',
         icon: <FolderOpen fontSize="small" />,
         onSelect: run(onLoadFile),
+      },
+      {
+        id: 'share-link',
+        label: t('palette.shareLink'),
+        keywords: 'url copy clipboard send',
+        icon: <IosShare fontSize="small" />,
+        onSelect: run(onShareLink),
       },
     ];
 
@@ -363,6 +373,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     onClearStored,
     onClose,
     onLoadFile,
+    onShareLink,
     run,
     onOpenExport,
     onOpenShortcuts,

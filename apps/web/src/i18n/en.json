@@ -12,6 +12,10 @@
     "donate": "Buy me a coffee",
     "save": "Save project",
     "load": "Load project",
+    "share": "Share link",
+    "shareCopied": "Link copied — share away",
+    "shareEmpty": "Add a layer first — nothing to share yet",
+    "shareTooBig": "Design too large to fit in a link",
     "safeZones": "Safe zones",
     "more": "More actions",
     "shortcuts": "Keyboard shortcuts",
@@ -63,6 +67,14 @@
     "safeZoneHint": "Keep key text in the safe area",
     "ariaLabel": "Design canvas"
   },
+  "share": {
+    "confirmTitle": "Open shared design?",
+    "confirmBody": "This will replace your current work. Shared links don't include the background photo — drop one in after loading.",
+    "confirmOpen": "Open shared",
+    "confirmKeep": "Keep my work",
+    "invalid": "That link doesn't look like a MINT design",
+    "loaded": "Shared design loaded — drop in a background photo to finish"
+  },
   "empty": {
     "title": "Let's make something fresh",
     "subtitle": "Drop a background image to start, or jump in with a text layer. Everything stays in your browser — no account needed.",
@@ -85,6 +97,7 @@
     "openExport": "Export image…",
     "saveFile": "Save project to file",
     "loadFile": "Load project from file",
+    "shareLink": "Copy shareable link",
     "undo": "Undo",
     "redo": "Redo",
     "duplicateLayer": "Duplicate selected layer",

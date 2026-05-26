@@ -3,6 +3,11 @@ import {
   AppBar,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Drawer,
   IconButton,
@@ -25,6 +30,7 @@ import {
   FolderOpen,
   GridView,
   HighlightOff,
+  IosShare,
   KeyboardOutlined,
   LocalCafeOutlined,
   SearchOutlined,
@@ -51,6 +57,11 @@ import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { TemplatesDialog } from './components/TemplatesDialog';
 import { CommandPalette } from './components/CommandPalette';
 import { isEditorDocument } from './utils/document-validation';
+import {
+  buildShareUrl,
+  clearShareFromLocation,
+  readShareFromLocation,
+} from './utils/share-link';
 import { usePullDownToClose } from './hooks/usePullDownToClose';
 import type { ImageRejectedError } from '@mint/utils';
 
@@ -102,6 +113,9 @@ export const App: React.FC = () => {
   const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(() =>
     readAutosavePref(),
   );
+  // Holds a document decoded from a `#mint=…` link when the recipient
+  // already has non-trivial work open. Null means "no pending share".
+  const [pendingShare, setPendingShare] = useState<EditorDocument | null>(null);
 
   /* ─── Store ─── */
   const canUndo = useEditorStore((s) => s.canUndo);
@@ -281,21 +295,43 @@ export const App: React.FC = () => {
   }, [doc, autosaveEnabled]);
 
   useEffect(() => {
-    // On first paint, only restore a previous session if the user hasn't
-    // opted out on this device. The opt-out is persisted separately so a
-    // shared browser doesn't leak a photo to the next visitor.
-    if (!autosaveEnabled) return;
-    const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (isEditorDocument(parsed)) {
-          loadDocument(parsed);
-        } else {
+    // On first paint, restore a previous session (unless the user opted
+    // out), then apply any incoming `#mint=…` shared design. The shared
+    // design always wins when the local doc is empty; otherwise we ask.
+    let restoredFromAutosave = false;
+    if (autosaveEnabled) {
+      const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (isEditorDocument(parsed)) {
+            loadDocument(parsed);
+            restoredFromAutosave =
+              parsed.layers.length > 0 || !!parsed.background.dataUrl;
+          } else {
+            localStorage.removeItem(PROJECT_STORAGE_KEY);
+          }
+        } catch {
           localStorage.removeItem(PROJECT_STORAGE_KEY);
         }
-      } catch {
-        localStorage.removeItem(PROJECT_STORAGE_KEY);
+      }
+    }
+
+    // Hash-based share. We always clear the hash after handling — refresh
+    // shouldn't re-trigger the prompt, and the original sender's link
+    // remains valid (it's all derived from `doc` on demand).
+    if (window.location.hash.includes('mint=')) {
+      const sharedDoc = readShareFromLocation();
+      clearShareFromLocation();
+      if (sharedDoc) {
+        if (restoredFromAutosave) {
+          setPendingShare(sharedDoc);
+        } else {
+          loadDocument(sharedDoc);
+          setSnackbarMsg(t('share.loaded'));
+        }
+      } else {
+        setSnackbarMsg(t('share.invalid'));
       }
     }
     // Intentionally exhaustive-deps: this should only run on mount per the
@@ -346,6 +382,42 @@ export const App: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   }, [doc]);
+
+  const handleShareLink = useCallback(async () => {
+    // Nothing to share when the doc is empty (recipient would just see
+    // the default blank canvas — no value in copying that link).
+    const isEmpty = doc.layers.length === 0 && !doc.background.dataUrl;
+    if (isEmpty) {
+      setSnackbarMsg(t('toolbar.shareEmpty'));
+      return;
+    }
+    const url = buildShareUrl(doc);
+    if (!url) {
+      setSnackbarMsg(t('toolbar.shareTooBig'));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setSnackbarMsg(t('toolbar.shareCopied'));
+    } catch {
+      // Older browsers / non-secure contexts — fall back to a textarea
+      // selection trick so the action never silently no-ops.
+      const ta = window.document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      window.document.body.appendChild(ta);
+      ta.select();
+      try {
+        window.document.execCommand('copy');
+        setSnackbarMsg(t('toolbar.shareCopied'));
+      } catch {
+        setSnackbarMsg(t('toolbar.shareTooBig'));
+      } finally {
+        window.document.body.removeChild(ta);
+      }
+    }
+  }, [doc, t]);
 
   const handleLoadFile = useCallback(() => {
     const input = window.document.createElement('input');
@@ -547,6 +619,16 @@ export const App: React.FC = () => {
               >
                 <FolderOpen fontSize="small" sx={{ mr: 1.25 }} />
                 {t('toolbar.load')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  void handleShareLink();
+                  closeOverflow();
+                }}
+                data-testid="toolbar-share"
+              >
+                <IosShare fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.share')}
               </MenuItem>
               <Divider />
               <MenuItem
@@ -877,6 +959,7 @@ export const App: React.FC = () => {
           onOpenShortcuts={() => setShortcutsOpen(true)}
           onSaveFile={handleSaveFile}
           onLoadFile={handleLoadFile}
+          onShareLink={() => void handleShareLink()}
           safeZones={showSafeZones}
           onToggleSafeZones={() => setShowSafeZones((p) => !p)}
           autosaveEnabled={autosaveEnabled}
@@ -890,6 +973,38 @@ export const App: React.FC = () => {
           open={shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
         />
+
+        <Dialog
+          open={pendingShare !== null}
+          onClose={() => setPendingShare(null)}
+          aria-labelledby="share-confirm-title"
+          data-testid="share-confirm"
+        >
+          <DialogTitle id="share-confirm-title">
+            {t('share.confirmTitle')}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>{t('share.confirmBody')}</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPendingShare(null)}>
+              {t('share.confirmKeep')}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (pendingShare) {
+                  loadDocument(pendingShare);
+                  setSnackbarMsg(t('share.loaded'));
+                }
+                setPendingShare(null);
+              }}
+              data-testid="share-confirm-open"
+            >
+              {t('share.confirmOpen')}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Snackbar
           open={snackbarMsg !== null}
