@@ -23,6 +23,19 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { TextLayerData } from '@mint/core';
 
+/**
+ * Optional integration hooks for a host-supplied drag library (e.g. dnd-kit).
+ * Keeping these as opaque props means @mint/ui doesn't have to depend on any
+ * particular drag library. The host wires `setRootRef`/`rootStyle` to the
+ * outer Box and `dragHandleProps` to the grip handle.
+ */
+export interface LayerListItemDragProps {
+  setRootRef?: (el: HTMLElement | null) => void;
+  rootStyle?: React.CSSProperties;
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>;
+  isDragging?: boolean;
+}
+
 interface LayerListItemProps {
   layer: TextLayerData;
   isSelected: boolean;
@@ -36,6 +49,7 @@ interface LayerListItemProps {
   isFirst: boolean;
   isLast: boolean;
   emptyText?: string;
+  drag?: LayerListItemDragProps;
 }
 
 /**
@@ -61,6 +75,7 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
   isFirst,
   isLast,
   emptyText = 'Empty text',
+  drag,
 }) => {
   const { t } = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -81,8 +96,24 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
 
   return (
     <Box
+      ref={drag?.setRootRef}
+      style={drag?.rootStyle}
       data-testid={`layer-item-${layer.id}`}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        // Don't hijack keyboard reorder — dnd-kit's KeyboardSensor uses
+        // Space too. The drag handle's listeners run first (and call
+        // preventDefault when picking up the layer); when no drag is in
+        // flight, Enter/Space activate the row's selection.
+        if (e.defaultPrevented) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       sx={{
         position: 'relative',
         display: 'flex',
@@ -94,8 +125,8 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
         borderRadius: '10px',
         border: '1px solid transparent',
         cursor: 'pointer',
-        transition: 'background .12s, border-color .12s',
-        opacity: layer.visible ? 1 : 0.65,
+        transition: 'background .12s, border-color .12s, box-shadow .12s',
+        opacity: layer.visible ? (drag?.isDragging ? 0.4 : 1) : 0.65,
         ...(isSelected
           ? {
               bgcolor: 'secondary.main',
@@ -104,6 +135,11 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
           : {
               '&:hover': { bgcolor: 'rgba(0,0,0,.03)' },
             }),
+        ...(drag?.isDragging && {
+          boxShadow: '0 4px 12px rgba(0,0,0,.10)',
+          bgcolor: 'background.paper',
+          borderColor: 'primary.light',
+        }),
         '&:hover .layer-grip, &:hover .layer-actions, &[data-selected="true"] .layer-grip, &[data-selected="true"] .layer-actions':
           { opacity: 1 },
       }}
@@ -111,16 +147,25 @@ export const LayerListItem: React.FC<LayerListItemProps> = ({
     >
       <Box
         className="layer-grip"
+        {...drag?.dragHandleProps}
         aria-label={t('layers.ariaGrip')}
+        // Stop click from bubbling — otherwise mouseDown → click on the row
+        // would change the selection before the drag listener fires.
+        onClick={(e) => {
+          drag?.dragHandleProps?.onClick?.(e);
+          e.stopPropagation();
+        }}
         sx={{
           width: 14,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: 'text.disabled',
-          opacity: 0,
+          // Always visible on touch (no hover); fade-in on desktop hover.
+          opacity: { xs: 1, md: drag?.isDragging ? 1 : 0 },
           transition: 'opacity .12s',
-          cursor: 'grab',
+          cursor: drag?.isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
         }}
       >
         <DragIndicator sx={{ fontSize: 16 }} />

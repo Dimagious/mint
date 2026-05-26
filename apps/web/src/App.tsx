@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -23,6 +23,7 @@ import {
   Download,
   FileDownloadOutlined,
   FolderOpen,
+  HighlightOff,
   KeyboardOutlined,
   LocalCafeOutlined,
   MoreHoriz,
@@ -37,8 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
 import type { EditorDocument, ExportOptions } from '@mint/core';
-import { ExportDialog } from '@mint/ui';
-import mintPrimaryLogo from './assets/mint-logo-primary.png';
+import { ExportDialog, MintMark } from '@mint/ui';
 import { CanvasPanel, CanvasPanelHandle } from './components/CanvasPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LayersPanel } from './components/LayersPanel';
@@ -47,9 +47,22 @@ import { ToolbarSection } from './components/ToolbarSection';
 import { AutosaveBadge } from './components/AutosaveBadge';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { isEditorDocument } from './utils/document-validation';
+import { usePullDownToClose } from './hooks/usePullDownToClose';
+import type { ImageRejectedError } from '@mint/utils';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/dimagious';
 const PROJECT_STORAGE_KEY = 'mint-project';
+const AUTOSAVE_PREF_KEY = 'mint-autosave';
+
+function readAutosavePref(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = window.localStorage.getItem(AUTOSAVE_PREF_KEY);
+    return raw === null ? true : raw === '1';
+  } catch {
+    return true;
+  }
+}
 
 function isQuotaExceededError(error: unknown): boolean {
   return (
@@ -80,6 +93,9 @@ export const App: React.FC = () => {
     null,
   );
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(() =>
+    readAutosavePref(),
+  );
 
   /* ─── Store ─── */
   const canUndo = useEditorStore((s) => s.canUndo);
@@ -99,6 +115,20 @@ export const App: React.FC = () => {
   const clipboard = useEditorStore((s) => s.clipboard);
 
   const overflowOpen = Boolean(overflowAnchor);
+
+  /* ─── Pull-down-to-dismiss gestures for the two mobile drawers ─── */
+  const layersDrawer = usePullDownToClose(() => setMobileLayersOpen(false));
+  const propertiesDrawer = usePullDownToClose(() =>
+    setMobilePropertiesOpen(false),
+  );
+
+  /* ─── Image rejection → localized snackbar ─── */
+  const handleImageRejected = useCallback(
+    (code: ImageRejectedError['code']) => {
+      setSnackbarMsg(t(`errors.image.${code}`));
+    },
+    [t],
+  );
 
   /* ─── Keyboard shortcuts (unchanged + ? + T) ─── */
   useEffect(() => {
@@ -200,8 +230,9 @@ export const App: React.FC = () => {
     shortcutsOpen,
   ]);
 
-  /* ─── Autosave (unchanged) ─── */
+  /* ─── Autosave — respects the per-device opt-out ─── */
   useEffect(() => {
+    if (!autosaveEnabled) return;
     const timer = setTimeout(() => {
       const serialized = JSON.stringify(doc);
       try {
@@ -223,9 +254,13 @@ export const App: React.FC = () => {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [doc]);
+  }, [doc, autosaveEnabled]);
 
   useEffect(() => {
+    // On first paint, only restore a previous session if the user hasn't
+    // opted out on this device. The opt-out is persisted separately so a
+    // shared browser doesn't leak a photo to the next visitor.
+    if (!autosaveEnabled) return;
     const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
     if (saved) {
       try {
@@ -239,7 +274,35 @@ export const App: React.FC = () => {
         localStorage.removeItem(PROJECT_STORAGE_KEY);
       }
     }
-  }, [loadDocument]);
+    // Intentionally exhaustive-deps: this should only run on mount per the
+    // current `autosaveEnabled` value; later toggles shouldn't re-load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleAutosave = useCallback(() => {
+    setAutosaveEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(AUTOSAVE_PREF_KEY, next ? '1' : '0');
+        if (!next) {
+          // User just turned it off — purge the persisted document too.
+          localStorage.removeItem(PROJECT_STORAGE_KEY);
+        }
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
+
+  const clearStoredProject = useCallback(() => {
+    try {
+      localStorage.removeItem(PROJECT_STORAGE_KEY);
+      setSnackbarMsg(t('toolbar.localStorageCleared'));
+    } catch {
+      /* ignore */
+    }
+  }, [t]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -303,12 +366,10 @@ export const App: React.FC = () => {
 
   const closeOverflow = () => setOverflowAnchor(null);
 
-  /* ─── Autosave signal — anything that changes on edit ─── */
-  const autosaveSignal = useMemo(
-    () =>
-      `${doc.presetId}:${doc.layers.length}:${JSON.stringify(doc.layers.map((l) => l.id + l.text + l.style.fontSize))}:${doc.background.dataUrl ? 'bg' : 'no-bg'}`,
-    [doc],
-  );
+  // Monotonic revision counter from the store — bumped on every mutation.
+  // The AutosaveBadge subscribes to this instead of doing a JSON.stringify
+  // on `doc` per render.
+  const autosaveSignal = useEditorStore((s) => s.revision);
 
   return (
     <ErrorBoundary>
@@ -336,20 +397,27 @@ export const App: React.FC = () => {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: 0.875,
                 flexShrink: 0,
                 mr: isMobile ? 0.5 : 1,
+                color: 'primary.dark',
               }}
+              aria-label="MINT"
             >
-              <Box
-                component="img"
-                src={mintPrimaryLogo}
-                alt="MINT"
-                sx={{
-                  height: isMobile ? 30 : 36,
-                  width: 'auto',
-                  display: 'block',
-                }}
-              />
+              <MintMark size={isMobile ? 24 : 28} />
+              {!isMobile && (
+                <Box
+                  component="span"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    letterSpacing: '0.06em',
+                    color: 'text.primary',
+                  }}
+                >
+                  MINT
+                </Box>
+              )}
             </Box>
 
             <ToolbarSection compact={isMobile} />
@@ -483,6 +551,33 @@ export const App: React.FC = () => {
               </MenuItem>
               <Divider />
               <MenuItem
+                onClick={() => {
+                  toggleAutosave();
+                  closeOverflow();
+                }}
+              >
+                <Save
+                  fontSize="small"
+                  sx={{
+                    mr: 1.25,
+                    color: autosaveEnabled ? 'primary.main' : 'inherit',
+                  }}
+                />
+                {autosaveEnabled
+                  ? t('toolbar.autosaveOn')
+                  : t('toolbar.autosaveOff')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  clearStoredProject();
+                  closeOverflow();
+                }}
+              >
+                <HighlightOff fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.localStorageClear')}
+              </MenuItem>
+              <Divider />
+              <MenuItem
                 component="a"
                 href={BUYMEACOFFEE_URL}
                 target="_blank"
@@ -520,6 +615,7 @@ export const App: React.FC = () => {
             <LayersPanel
               showSafeZones={showSafeZones}
               onToggleSafeZones={setShowSafeZones}
+              onImageRejected={handleImageRejected}
             />
           )}
 
@@ -550,6 +646,7 @@ export const App: React.FC = () => {
                 el?.click();
               }}
               onRequestAddText={() => addTextLayer()}
+              onImageRejected={handleImageRejected}
             />
           </Box>
 
@@ -654,23 +751,28 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobileLayersOpen}
               onClose={() => setMobileLayersOpen(false)}
+              aria-labelledby="layers-drawer-title"
               PaperProps={{
                 sx: {
                   borderTopLeftRadius: 22,
                   borderTopRightRadius: 22,
                   maxHeight: '90dvh',
+                  ...layersDrawer.paperSx,
                 },
               }}
             >
               <DrawerHeader
+                titleId="layers-drawer-title"
                 title={t('mobile.drawerTitleLayers')}
                 onClose={() => setMobileLayersOpen(false)}
+                handleProps={layersDrawer.handleProps}
               />
               <Box sx={{ overflowY: 'auto' }}>
                 <LayersPanel
                   mobile
                   showSafeZones={showSafeZones}
                   onToggleSafeZones={setShowSafeZones}
+                  onImageRejected={handleImageRejected}
                 />
               </Box>
             </Drawer>
@@ -679,15 +781,18 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobilePropertiesOpen}
               onClose={() => setMobilePropertiesOpen(false)}
+              aria-labelledby="properties-drawer-title"
               PaperProps={{
                 sx: {
                   borderTopLeftRadius: 22,
                   borderTopRightRadius: 22,
                   maxHeight: '90dvh',
+                  ...propertiesDrawer.paperSx,
                 },
               }}
             >
               <DrawerHeader
+                titleId="properties-drawer-title"
                 title={
                   selectedLayerId
                     ? t('mobile.drawerTitleEditing', {
@@ -698,6 +803,7 @@ export const App: React.FC = () => {
                     : t('properties.title')
                 }
                 onClose={() => setMobilePropertiesOpen(false)}
+                handleProps={propertiesDrawer.handleProps}
               />
               <Box sx={{ overflowY: 'auto' }}>
                 <PropertiesPanel mobile />
@@ -730,12 +836,39 @@ export const App: React.FC = () => {
   );
 };
 
-const DrawerHeader: React.FC<{ title: string; onClose: () => void }> = ({
+interface DrawerHeaderProps {
+  title: string;
+  /** DOM id the parent Drawer points at via `aria-labelledby`. */
+  titleId?: string;
+  onClose: () => void;
+  /** Touch handlers from `usePullDownToClose`; applied to the grab area. */
+  handleProps?: {
+    onTouchStart: (e: React.TouchEvent) => void;
+    onTouchMove: (e: React.TouchEvent) => void;
+    onTouchEnd: (e: React.TouchEvent) => void;
+    style: React.CSSProperties;
+  };
+}
+
+const DrawerHeader: React.FC<DrawerHeaderProps> = ({
   title,
+  titleId,
   onClose,
+  handleProps,
 }) => (
   <>
-    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.25, pb: 0.5 }}>
+    {/* Pull-to-dismiss zone: a generous touch target wrapping the visible pill. */}
+    <Box
+      {...handleProps}
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        pt: 1.25,
+        pb: 0.5,
+        // Make the entire band a draggable target, not just the 40px pill.
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
       <Box
         sx={{ width: 40, height: 4, bgcolor: 'divider', borderRadius: '999px' }}
       />
@@ -746,8 +879,10 @@ const DrawerHeader: React.FC<{ title: string; onClose: () => void }> = ({
       justifyContent="space-between"
       sx={{ px: 2, pb: 1.75, borderBottom: 1, borderColor: 'divider' }}
     >
-      <Box sx={{ fontSize: 16, fontWeight: 600 }}>{title}</Box>
-      <IconButton onClick={onClose} size="small">
+      <Box id={titleId} sx={{ fontSize: 16, fontWeight: 600 }}>
+        {title}
+      </Box>
+      <IconButton onClick={onClose} size="small" aria-label="Close">
         <Close fontSize="small" />
       </IconButton>
     </Stack>

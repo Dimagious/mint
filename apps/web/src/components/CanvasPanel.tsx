@@ -16,7 +16,7 @@ import {
   getPresetById,
   getSafeZoneByPresetId,
 } from '@mint/core';
-import { readFileAsDataUrl } from '@mint/utils';
+import { readImageFileSafely, ImageRejectedError } from '@mint/utils';
 import { EmptyStateOverlay } from './EmptyStateOverlay';
 
 export interface CanvasPanelHandle {
@@ -32,6 +32,8 @@ interface CanvasPanelProps {
   /** Optional callbacks for the empty-state CTAs. */
   onRequestUpload?: () => void;
   onRequestAddText?: () => void;
+  /** Surfaced when a dropped file fails MIME/size/magic-byte validation. */
+  onImageRejected?: (code: ImageRejectedError['code']) => void;
 }
 
 const MAX_SCALE = 0.5;
@@ -74,7 +76,7 @@ function computeScale(presetId: string): number {
  */
 export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
   function CanvasPanel(
-    { showSafeZones, onRequestUpload, onRequestAddText },
+    { showSafeZones, onRequestUpload, onRequestAddText, onImageRejected },
     ref,
   ) {
     const { t } = useTranslation();
@@ -92,7 +94,9 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
     const [scale, setScale] = useState(() => computeScale(doc.presetId));
     const [hintDismissed, setHintDismissed] = useState(false);
 
-    // Mount / dispose fabric adapter — UNCHANGED logic.
+    // Mount / dispose fabric adapter exactly once. `selectLayer` /
+    // `updateTextLayer` are Zustand setters with stable references, so
+    // excluding them from the deps array is intentional.
     useEffect(() => {
       if (!canvasRef.current) return;
       const adapter = new FabricAdapter(canvasRef.current);
@@ -106,6 +110,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         adapter.dispose();
         adapterRef.current = null;
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -170,11 +175,19 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         e.preventDefault();
         setDragging(false);
         const file = e.dataTransfer.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        const dataUrl = await readFileAsDataUrl(file);
-        setBackground({ ...doc.background, dataUrl });
+        if (!file) return;
+        try {
+          const dataUrl = await readImageFileSafely(file);
+          setBackground({ ...doc.background, dataUrl });
+        } catch (err) {
+          if (err instanceof ImageRejectedError) {
+            onImageRejected?.(err.code);
+          } else {
+            throw err;
+          }
+        }
       },
-      [setBackground, doc.background],
+      [setBackground, doc.background, onImageRejected],
     );
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -194,138 +207,149 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
 
     return (
       <Box
-        data-testid="canvas-panel"
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => !hintDismissed && setHintDismissed(true)}
         sx={{
-          width: preset.width * scale,
-          height: preset.height * scale,
-          borderRadius: '14px',
-          boxShadow:
-            '0 1px 2px rgba(0,0,0,.04), 0 20px 48px -12px rgba(20,40,30,.18)',
-          overflow: 'hidden',
           position: 'relative',
           flexShrink: 0,
-          bgcolor: 'background.paper',
         }}
       >
-        <canvas ref={canvasRef} aria-label={t('canvas.ariaLabel')} role="img" />
-
-        {/* Dimensions badge */}
+        {/* Dimensions badge — lives outside the card so it never collides
+            with the top safe-zone band. Sits just above the card's top edge. */}
         <Typography
           className="tnum"
           sx={{
             position: 'absolute',
-            top: 14,
-            left: 14,
-            px: 1.25,
-            py: 0.5,
-            borderRadius: '999px',
-            bgcolor: 'rgba(20,30,25,.7)',
+            top: -22,
+            left: 0,
+            px: 0.875,
+            py: '2px',
+            borderRadius: '6px',
+            bgcolor: 'rgba(20,30,25,.85)',
             color: '#fff',
-            fontSize: 11,
+            fontSize: 10,
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
             backdropFilter: 'blur(8px)',
-            zIndex: 5,
             whiteSpace: 'nowrap',
             letterSpacing: '0.02em',
             pointerEvents: 'none',
+            lineHeight: 1.4,
           }}
         >
           {preset.width} × {preset.height}
         </Typography>
 
-        {/* Safe zones */}
-        {safeZone && (
-          <>
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: safeZone.top * scale,
-                bgcolor: 'rgba(47, 159, 122, 0.07)',
-                borderBottom: '1px dashed rgba(47,159,122,.4)',
-                pointerEvents: 'none',
-                zIndex: 3,
-              }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: safeZone.bottom * scale,
-                bgcolor: 'rgba(47, 159, 122, 0.07)',
-                borderTop: '1px dashed rgba(47,159,122,.4)',
-                pointerEvents: 'none',
-                zIndex: 3,
-              }}
-            />
-          </>
-        )}
-
-        {/* Safe-zone hint pill — bottom-left, auto-dismiss */}
-        {safeZone && showSafeHint && (
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 14,
-              left: 14,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.75,
-              px: '11px',
-              py: '5px',
-              borderRadius: '999px',
-              bgcolor: 'rgba(20,30,25,.7)',
-              color: '#fff',
-              fontSize: 11,
-              backdropFilter: 'blur(8px)',
-              zIndex: 5,
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <CropFree sx={{ fontSize: 12 }} />
-            {t('canvas.safeZoneHint')}
-          </Box>
-        )}
-
-        {/* Drop image overlay (mint, not blue) */}
-        {dragging && (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 8,
-              borderRadius: '10px',
-              bgcolor: 'rgba(230, 243, 236, .85)',
-              border: '2px dashed',
-              borderColor: 'primary.main',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
-              pointerEvents: 'none',
-              color: 'primary.dark',
-              fontWeight: 600,
-            }}
-          >
-            <Typography color="inherit">{t('canvas.dropImage')}</Typography>
-          </Box>
-        )}
-
-        {/* Empty state */}
-        {isEmpty && onRequestUpload && (
-          <EmptyStateOverlay
-            onUpload={onRequestUpload}
-            onAddText={onRequestAddText ?? (() => addTextLayer())}
+        <Box
+          data-testid="canvas-panel"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => !hintDismissed && setHintDismissed(true)}
+          sx={{
+            width: preset.width * scale,
+            height: preset.height * scale,
+            borderRadius: '14px',
+            boxShadow:
+              '0 1px 2px rgba(0,0,0,.04), 0 20px 48px -12px rgba(20,40,30,.18)',
+            overflow: 'hidden',
+            position: 'relative',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            aria-label={t('canvas.ariaLabel')}
+            role="img"
           />
-        )}
+
+          {/* Safe zones */}
+          {safeZone && (
+            <>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: safeZone.top * scale,
+                  bgcolor: 'rgba(47, 159, 122, 0.07)',
+                  borderBottom: '1px dashed rgba(47,159,122,.4)',
+                  pointerEvents: 'none',
+                  zIndex: 3,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: safeZone.bottom * scale,
+                  bgcolor: 'rgba(47, 159, 122, 0.07)',
+                  borderTop: '1px dashed rgba(47,159,122,.4)',
+                  pointerEvents: 'none',
+                  zIndex: 3,
+                }}
+              />
+            </>
+          )}
+
+          {/* Safe-zone hint pill — bottom-left, auto-dismiss */}
+          {safeZone && showSafeHint && (
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 14,
+                left: 14,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: '11px',
+                py: '5px',
+                borderRadius: '999px',
+                bgcolor: 'rgba(20,30,25,.7)',
+                color: '#fff',
+                fontSize: 11,
+                backdropFilter: 'blur(8px)',
+                zIndex: 5,
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <CropFree sx={{ fontSize: 12 }} />
+              {t('canvas.safeZoneHint')}
+            </Box>
+          )}
+
+          {/* Drop image overlay (mint, not blue) */}
+          {dragging && (
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 8,
+                borderRadius: '10px',
+                bgcolor: 'rgba(230, 243, 236, .85)',
+                border: '2px dashed',
+                borderColor: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                pointerEvents: 'none',
+                color: 'primary.dark',
+                fontWeight: 600,
+              }}
+            >
+              <Typography color="inherit">{t('canvas.dropImage')}</Typography>
+            </Box>
+          )}
+
+          {/* Empty state */}
+          {isEmpty && onRequestUpload && (
+            <EmptyStateOverlay
+              onUpload={onRequestUpload}
+              onAddText={onRequestAddText ?? (() => addTextLayer())}
+            />
+          )}
+        </Box>
       </Box>
     );
   },

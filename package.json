@@ -25,5 +25,9 @@
       "esbuild",
       "@playwright/browser-chromium"
     ]
+  },
+  "devDependencies": {
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1"
   }
 }
