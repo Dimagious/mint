@@ -38,7 +38,6 @@
 <p align="center">[English] · <a href="./README.ru.md">Русский</a></p>
 
 <p align="center">
-  <!-- TODO: hero.gif — 8-12 s loop: drop a photo → add headline → smart-contrast → export -->
   <img src="docs/demo/hero.gif" alt="A short loop of MINT: a photo is dropped onto the canvas, a headline appears, one click of Smart Contrast picks a readable color, and the image exports as a PNG." width="900" />
 </p>
 
@@ -73,33 +72,27 @@ The whole tool runs in your browser. Your photo never leaves your machine. There
 
 ### 1. Drop, type, export
 
-<!-- TODO: workflow.gif — 12 s: drop a photo, add a headline, click Smart Contrast, export PNG -->
-<img src="docs/demo/workflow.gif" alt="A photo is dropped onto the canvas. A headline is typed. Smart Contrast turns the text white with a soft stroke. Export dialog opens, PNG is downloaded." width="900" />
+<img src="docs/demo/workflow.gif" alt="Step-by-step demo with subtitles. A photo is dropped, a headline is typed, font size jumps to 120, Smart Contrast picks a readable color, the Export dialog opens." width="900" />
 
 ### 2. Snap to layer guides
 
-<!-- TODO: snap.gif — 8 s: drag a layer near another, watch mint-green guide appear, drag near canvas center -->
 <img src="docs/demo/snap.gif" alt="A text layer is dragged across the canvas. Mint-green dashed guides appear when its left edge aligns with another layer's left edge, then when its center matches another center, then when it hits the canvas center." width="900" />
 
 ### 3. ⌘K command palette
 
-<!-- TODO: palette.gif — 6 s: press Cmd+K, type "exp", hit Enter → export dialog opens; press Cmd+K, type "story" → preset switches -->
-<img src="docs/demo/palette.gif" alt="Cmd+K opens the command palette. The user types 'export', the export action is selected, the export dialog opens. The palette opens again, the user types 'story', and the canvas switches to the 1080x1920 Story preset." width="900" />
+<img src="docs/demo/palette.gif" alt="Cmd+K opens the command palette. The user types 'exp', hits Enter, the Export dialog opens. The palette opens again, the user types 'story', and the canvas switches to the 1080x1920 Story preset." width="900" />
 
 ### 4. Share by URL
 
-<!-- TODO: share.gif — 10 s: design is composed, More → Share link → URL copied to clipboard. New tab → paste URL → same design opens. -->
-<img src="docs/demo/share.gif" alt="A composed design is open. The user clicks More → Share link and a toast says 'Link copied'. A new browser tab is opened, the URL is pasted, and the same design loads (without the background photo, with a hint to add one)." width="900" />
+<img src="docs/demo/share.gif" alt="A composed design with a photo and 'Coffee O Clock' headline. The user clicks More → Share link, a toast says 'Link copied'. The same URL re-opens the design — text preserved, the photo is intentionally stripped, with a hint to drop in a new one." width="900" />
 
 ### 5. Reframe the background photo
 
-<!-- TODO: bg-drag.gif — 8 s: photo is on canvas, user drags it inside the frame; uses a corner handle to zoom; clicks Reset position -->
-<img src="docs/demo/bg-drag.gif" alt="A photo on the canvas is dragged around inside the frame, then zoomed using a corner handle, then a Reset position button returns it to auto-fit." width="900" />
+<img src="docs/demo/bg-drag.gif" alt="A photo is dropped onto the canvas in Crop mode. The user drags the photo inside the frame to reposition it. A 'Reset position' button appears in the Layers panel; clicking it returns the photo to auto-fit." width="900" />
 
 ### 6. Mobile
 
-<!-- TODO: mobile.gif — 12 s on a phone viewport: open empty state, add text, swipe up the Style drawer, change color, export -->
-<img src="docs/demo/mobile.gif" alt="MINT on a phone screen. The user taps Add text from the empty state, opens the Style drawer with a swipe, changes color, and taps Export." width="400" />
+<img src="docs/demo/mobile.gif" alt="MINT on a phone viewport. The user taps Add text from the empty state, opens the Style drawer, and the colour preset swatches appear inline below the Text/Layout/Effects tabs." width="400" />
 
 ## Everything you can do
 
