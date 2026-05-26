@@ -40,6 +40,15 @@ export default defineConfig({
             type: 'image/svg+xml',
             purpose: 'any maskable',
           },
+          // PNG fallback for iOS — Safari ignores SVG icons on
+          // "Add to Home Screen" and renders a low-quality bitmap
+          // from a snapshot otherwise.
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any',
+          },
         ],
         categories: ['productivity', 'graphics', 'design'],
       },

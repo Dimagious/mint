@@ -41,9 +41,56 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MINT" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
     <title>MINT — Merge Image 'N Text</title>
+    <meta
+      name="description"
+      content="Make social images in your browser — drop a photo, type a headline, hit Export. No signup, no upload, no watermark. MINT = Merge Image'N Text."
+    />
+
+    <!--
+      Open Graph + Twitter Card meta. Absolute URLs are mandatory — most
+      crawlers ignore relative ones for og:image / og:url. Hardcoded to
+      the GitHub Pages host; update both if the project moves.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MINT" />
+    <meta property="og:title" content="MINT — Merge Image 'N Text" />
+    <meta
+      property="og:description"
+      content="Make social images in your browser. Drop a photo, type a headline, export PNG / JPEG / WebP. No signup, no upload, no watermark."
+    />
+    <meta property="og:url" content="https://dimagious.github.io/mint/" />
+    <meta
+      property="og:image"
+      content="https://dimagious.github.io/mint/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="MINT editor showing the Export dialog with a 1080x1080 preview — a coffee photo with the 'Make it MINT' headline, PNG selected, est. 1.1 MB."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MINT — Merge Image 'N Text" />
+    <meta
+      name="twitter:description"
+      content="Make social images in your browser. Drop a photo, type a headline, export. No signup, no upload, no watermark."
+    />
+    <meta
+      name="twitter:image"
+      content="https://dimagious.github.io/mint/og-image.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="MINT editor showing the Export dialog with a 1080x1080 preview of a coffee photo with the 'Make it MINT' headline."
+    />
+
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>
