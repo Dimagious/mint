@@ -41,4 +41,84 @@ describe('isEditorDocument', () => {
 
     expect(isEditorDocument(invalid)).toBe(false);
   });
+
+  it('rejects layers with absurd fontSize', () => {
+    const layer = createTextLayer();
+    const invalid = {
+      ...createDefaultDocument(),
+      layers: [{ ...layer, style: { ...layer.style, fontSize: 1e9 } }],
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('rejects layers with text longer than 4096 chars', () => {
+    const layer = createTextLayer();
+    const invalid = {
+      ...createDefaultDocument(),
+      layers: [{ ...layer, text: 'a'.repeat(5000) }],
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('rejects backgrounds with a javascript: dataUrl', () => {
+    const doc = createDefaultDocument();
+    const invalid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        dataUrl: 'javascript:alert(1)',
+      },
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('rejects backgrounds with an http(s) URL pretending to be a dataUrl', () => {
+    const doc = createDefaultDocument();
+    const invalid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        dataUrl: 'https://evil.example.com/x.png',
+      },
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('accepts a well-formed image dataUrl', () => {
+    const doc = createDefaultDocument();
+    const valid = {
+      ...doc,
+      background: {
+        ...doc.background,
+        // 1x1 PNG, the smallest base64 we can build
+        dataUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+      },
+    };
+    expect(isEditorDocument(valid)).toBe(true);
+  });
+
+  it('rejects malformed color strings', () => {
+    const layer = createTextLayer();
+    const invalid = {
+      ...createDefaultDocument(),
+      layers: [
+        {
+          ...layer,
+          style: { ...layer.style, color: 'not a real color' },
+        },
+      ],
+    };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
+
+  it('rejects documents with too many layers', () => {
+    const layer = createTextLayer();
+    const layers = Array.from({ length: 101 }, (_, i) => ({
+      ...layer,
+      id: `layer-${i}`,
+    }));
+    const invalid = { ...createDefaultDocument(), layers };
+    expect(isEditorDocument(invalid)).toBe(false);
+  });
 });
