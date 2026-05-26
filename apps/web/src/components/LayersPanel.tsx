@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '@mint/editor';
-import { LayerListItem } from '@mint/ui';
+import { ColorChip, LayerListItem } from '@mint/ui';
 import { readImageFileSafely, ImageRejectedError } from '@mint/utils';
 import type { TextLayerData } from '@mint/core';
 import {
@@ -232,20 +232,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
             {t('layers.bgColor')}
           </Typography>
-          <input
-            type="color"
+          <ColorChip
             value={doc.background.color || '#e8f5ee'}
-            onChange={(e) =>
-              setBackground({ ...doc.background, color: e.target.value })
-            }
-            style={{
-              width: '100%',
-              height: 32,
-              padding: 0,
-              border: '1px solid rgba(0,0,0,.07)',
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}
+            onChange={(color) => setBackground({ ...doc.background, color })}
           />
           {doc.background.dataUrl && (
             <Typography
