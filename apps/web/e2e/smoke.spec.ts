@@ -29,3 +29,25 @@ test('mobile panels open via bottom actions', async ({ page }) => {
   await page.getByTestId('mobile-properties-button').click();
   await expect(page.getByTestId('properties-panel-mobile')).toBeVisible();
 });
+
+test('templates dialog loads a curated composition into the editor', async ({
+  page,
+}) => {
+  await page.goto('/');
+  // Clear any prior autosave so the empty-state overlay shows up.
+  await page.evaluate(() => localStorage.removeItem('mint-project'));
+  await page.reload();
+
+  // Open via the empty-state link.
+  await page.getByTestId('empty-cta-templates').click();
+  await expect(page.getByTestId('templates-dialog')).toBeVisible();
+
+  // Switch to Quotes and pick the classic quote.
+  await page.getByTestId('templates-tab-quote').click();
+  await page.getByTestId('template-card-quote-classic').click();
+
+  // Dialog closes, the editor now has the template's two text layers.
+  await expect(page.getByTestId('templates-dialog')).toBeHidden();
+  const layers = page.locator('[data-testid^="layer-item-"]');
+  await expect(layers).toHaveCount(2);
+});

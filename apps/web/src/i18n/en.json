@@ -15,6 +15,7 @@
     "safeZones": "Safe zones",
     "more": "More actions",
     "shortcuts": "Keyboard shortcuts",
+    "templates": "Browse templates",
     "autosaveOn": "Autosave: on (this device)",
     "autosaveOff": "Autosave: off",
     "localStorageClear": "Clear saved data on this device",
@@ -64,7 +65,21 @@
     "subtitle": "Drop a background image to start, or jump in with a text layer. Everything stays in your browser — no account needed.",
     "ctaUpload": "Upload image",
     "ctaAddText": "Add text",
+    "ctaTemplates": "Or start from a template →",
     "tipUndo": "Tip: press {{cmd}}+Z to undo, ? for shortcuts"
+  },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Start from a curated composition. Add your own photo on top after loading.",
+    "close": "Close templates",
+    "categories": {
+      "all": "All",
+      "announcement": "Announcement",
+      "quote": "Quotes",
+      "social": "Social",
+      "promo": "Promo",
+      "dev": "Dev"
+    }
   },
   "properties": {
     "title": "Properties",

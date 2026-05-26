@@ -32,6 +32,7 @@ interface CanvasPanelProps {
   /** Optional callbacks for the empty-state CTAs. */
   onRequestUpload?: () => void;
   onRequestAddText?: () => void;
+  onRequestTemplates?: () => void;
   /** Surfaced when a dropped file fails MIME/size/magic-byte validation. */
   onImageRejected?: (code: ImageRejectedError['code']) => void;
 }
@@ -76,7 +77,13 @@ function computeScale(presetId: string): number {
  */
 export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
   function CanvasPanel(
-    { showSafeZones, onRequestUpload, onRequestAddText, onImageRejected },
+    {
+      showSafeZones,
+      onRequestUpload,
+      onRequestAddText,
+      onRequestTemplates,
+      onImageRejected,
+    },
     ref,
   ) {
     const { t } = useTranslation();
@@ -347,6 +354,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
             <EmptyStateOverlay
               onUpload={onRequestUpload}
               onAddText={onRequestAddText ?? (() => addTextLayer())}
+              onBrowseTemplates={onRequestTemplates}
             />
           )}
         </Box>
