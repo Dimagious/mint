@@ -23,6 +23,7 @@ import {
   Download,
   FileDownloadOutlined,
   FolderOpen,
+  GridView,
   HighlightOff,
   KeyboardOutlined,
   LocalCafeOutlined,
@@ -46,6 +47,7 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { ToolbarSection } from './components/ToolbarSection';
 import { AutosaveBadge } from './components/AutosaveBadge';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
+import { TemplatesDialog } from './components/TemplatesDialog';
 import { isEditorDocument } from './utils/document-validation';
 import { usePullDownToClose } from './hooks/usePullDownToClose';
 import type { ImageRejectedError } from '@mint/utils';
@@ -86,6 +88,7 @@ export const App: React.FC = () => {
   const [exportOpen, setExportOpen] = useState(false);
   const [exportPreview, setExportPreview] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [showSafeZones, setShowSafeZones] = useState(true);
   const [mobileLayersOpen, setMobileLayersOpen] = useState(false);
   const [mobilePropertiesOpen, setMobilePropertiesOpen] = useState(false);
@@ -181,10 +184,18 @@ export const App: React.FC = () => {
           setShortcutsOpen(false);
           return;
         }
+        if (templatesOpen) {
+          e.preventDefault();
+          setTemplatesOpen(false);
+          return;
+        }
         if (selectedLayerId) {
           e.preventDefault();
           selectLayer(null);
         }
+      } else if (ctrl && e.key === 'g') {
+        e.preventDefault();
+        setTemplatesOpen(true);
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setShortcutsOpen(true);
@@ -228,6 +239,7 @@ export const App: React.FC = () => {
     t,
     addTextLayer,
     shortcutsOpen,
+    templatesOpen,
   ]);
 
   /* ─── Autosave — respects the per-device opt-out ─── */
@@ -542,6 +554,15 @@ export const App: React.FC = () => {
               </MenuItem>
               <MenuItem
                 onClick={() => {
+                  setTemplatesOpen(true);
+                  closeOverflow();
+                }}
+              >
+                <GridView fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.templates')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
                   setShortcutsOpen(true);
                   closeOverflow();
                 }}
@@ -646,6 +667,7 @@ export const App: React.FC = () => {
                 el?.click();
               }}
               onRequestAddText={() => addTextLayer()}
+              onRequestTemplates={() => setTemplatesOpen(true)}
               onImageRejected={handleImageRejected}
             />
           </Box>
@@ -818,6 +840,12 @@ export const App: React.FC = () => {
           onExport={handleExport}
           doc={doc}
           previewDataUrl={exportPreview}
+        />
+
+        <TemplatesDialog
+          open={templatesOpen}
+          onClose={() => setTemplatesOpen(false)}
+          onPick={loadDocument}
         />
 
         <ShortcutsDialog
