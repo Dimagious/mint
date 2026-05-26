@@ -676,6 +676,7 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobileLayersOpen}
               onClose={() => setMobileLayersOpen(false)}
+              aria-labelledby="layers-drawer-title"
               PaperProps={{
                 sx: {
                   borderTopLeftRadius: 22,
@@ -686,6 +687,7 @@ export const App: React.FC = () => {
               }}
             >
               <DrawerHeader
+                titleId="layers-drawer-title"
                 title={t('mobile.drawerTitleLayers')}
                 onClose={() => setMobileLayersOpen(false)}
                 handleProps={layersDrawer.handleProps}
@@ -704,6 +706,7 @@ export const App: React.FC = () => {
               anchor="bottom"
               open={mobilePropertiesOpen}
               onClose={() => setMobilePropertiesOpen(false)}
+              aria-labelledby="properties-drawer-title"
               PaperProps={{
                 sx: {
                   borderTopLeftRadius: 22,
@@ -714,6 +717,7 @@ export const App: React.FC = () => {
               }}
             >
               <DrawerHeader
+                titleId="properties-drawer-title"
                 title={
                   selectedLayerId
                     ? t('mobile.drawerTitleEditing', {
@@ -759,6 +763,8 @@ export const App: React.FC = () => {
 
 interface DrawerHeaderProps {
   title: string;
+  /** DOM id the parent Drawer points at via `aria-labelledby`. */
+  titleId?: string;
   onClose: () => void;
   /** Touch handlers from `usePullDownToClose`; applied to the grab area. */
   handleProps?: {
@@ -771,6 +777,7 @@ interface DrawerHeaderProps {
 
 const DrawerHeader: React.FC<DrawerHeaderProps> = ({
   title,
+  titleId,
   onClose,
   handleProps,
 }) => (
@@ -797,8 +804,10 @@ const DrawerHeader: React.FC<DrawerHeaderProps> = ({
       justifyContent="space-between"
       sx={{ px: 2, pb: 1.75, borderBottom: 1, borderColor: 'divider' }}
     >
-      <Box sx={{ fontSize: 16, fontWeight: 600 }}>{title}</Box>
-      <IconButton onClick={onClose} size="small">
+      <Box id={titleId} sx={{ fontSize: 16, fontWeight: 600 }}>
+        {title}
+      </Box>
+      <IconButton onClick={onClose} size="small" aria-label="Close">
         <Close fontSize="small" />
       </IconButton>
     </Stack>
