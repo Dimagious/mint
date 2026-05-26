@@ -52,6 +52,36 @@ test('templates dialog loads a curated composition into the editor', async ({
   await expect(layers).toHaveCount(2);
 });
 
+test('share link copies a URL that re-opens the design on a fresh visit', async ({
+  page,
+  context,
+}) => {
+  // Grant clipboard so the Share action can write without a permission prompt.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await page.evaluate(() => localStorage.removeItem('mint-project'));
+  await page.reload();
+
+  // Compose a tiny doc: one text layer is enough to make the share non-empty.
+  await page.getByTestId('empty-cta-add-text').click();
+
+  // Trigger Share via overflow menu (no autosave to preserve through reload).
+  await page.evaluate(() => localStorage.removeItem('mint-project'));
+  await page.getByRole('button', { name: /more actions/i }).click();
+  await page.getByTestId('toolbar-share').click();
+
+  // Pull the copied URL out of the clipboard, then navigate to it.
+  const sharedUrl = await page.evaluate(() => navigator.clipboard.readText());
+  expect(sharedUrl).toMatch(/#mint=/);
+
+  await page.goto(sharedUrl);
+  // The empty-state CTA disappears once a layer is loaded.
+  await expect(page.getByTestId('empty-cta-add-text')).toHaveCount(0);
+  await expect(
+    page.getByTestId('layers-panel').getByText('New Text'),
+  ).toBeVisible();
+});
+
 test('command palette opens via overflow menu and executes a command', async ({
   page,
 }) => {
