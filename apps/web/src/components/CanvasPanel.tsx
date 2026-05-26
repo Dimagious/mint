@@ -94,7 +94,9 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
     const [scale, setScale] = useState(() => computeScale(doc.presetId));
     const [hintDismissed, setHintDismissed] = useState(false);
 
-    // Mount / dispose fabric adapter — UNCHANGED logic.
+    // Mount / dispose fabric adapter exactly once. `selectLayer` /
+    // `updateTextLayer` are Zustand setters with stable references, so
+    // excluding them from the deps array is intentional.
     useEffect(() => {
       if (!canvasRef.current) return;
       const adapter = new FabricAdapter(canvasRef.current);
@@ -108,6 +110,7 @@ export const CanvasPanel = forwardRef<CanvasPanelHandle, CanvasPanelProps>(
         adapter.dispose();
         adapterRef.current = null;
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
