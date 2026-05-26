@@ -51,3 +51,27 @@ test('templates dialog loads a curated composition into the editor', async ({
   const layers = page.locator('[data-testid^="layer-item-"]');
   await expect(layers).toHaveCount(2);
 });
+
+test('command palette opens via overflow menu and executes a command', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.removeItem('mint-project'));
+  await page.reload();
+
+  // Open via overflow menu — Playwright's headless keyboard doesn't
+  // reliably reach the window-level keydown listener for Cmd+K.
+  await page.getByRole('button', { name: /more actions/i }).click();
+  await page.getByRole('menuitem', { name: /command palette/i }).click();
+  await expect(page.getByTestId('command-palette')).toBeVisible();
+
+  // Fuzzy-search "add" then activate the top match.
+  await page.getByTestId('command-palette-input').fill('add');
+  await page.keyboard.press('Enter');
+
+  // Palette closes; the editor has a fresh text layer.
+  await expect(page.getByTestId('command-palette')).toBeHidden();
+  await expect(
+    page.getByTestId('layers-panel').getByText('New Text'),
+  ).toBeVisible();
+});

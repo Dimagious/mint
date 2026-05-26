@@ -27,6 +27,7 @@ import {
   HighlightOff,
   KeyboardOutlined,
   LocalCafeOutlined,
+  SearchOutlined,
   MoreHoriz,
   Redo,
   Save,
@@ -48,6 +49,7 @@ import { ToolbarSection } from './components/ToolbarSection';
 import { AutosaveBadge } from './components/AutosaveBadge';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { TemplatesDialog } from './components/TemplatesDialog';
+import { CommandPalette } from './components/CommandPalette';
 import { isEditorDocument } from './utils/document-validation';
 import { usePullDownToClose } from './hooks/usePullDownToClose';
 import type { ImageRejectedError } from '@mint/utils';
@@ -89,6 +91,7 @@ export const App: React.FC = () => {
   const [exportPreview, setExportPreview] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [showSafeZones, setShowSafeZones] = useState(true);
   const [mobileLayersOpen, setMobileLayersOpen] = useState(false);
   const [mobilePropertiesOpen, setMobilePropertiesOpen] = useState(false);
@@ -179,6 +182,11 @@ export const App: React.FC = () => {
         e.preventDefault();
         deleteSelectedLayer();
       } else if (e.key === 'Escape') {
+        if (paletteOpen) {
+          e.preventDefault();
+          setPaletteOpen(false);
+          return;
+        }
         if (shortcutsOpen) {
           e.preventDefault();
           setShortcutsOpen(false);
@@ -196,6 +204,9 @@ export const App: React.FC = () => {
       } else if (ctrl && e.key === 'g') {
         e.preventDefault();
         setTemplatesOpen(true);
+      } else if (ctrl && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(true);
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setShortcutsOpen(true);
@@ -240,6 +251,7 @@ export const App: React.FC = () => {
     addTextLayer,
     shortcutsOpen,
     templatesOpen,
+    paletteOpen,
   ]);
 
   /* ─── Autosave — respects the per-device opt-out ─── */
@@ -554,6 +566,15 @@ export const App: React.FC = () => {
               </MenuItem>
               <MenuItem
                 onClick={() => {
+                  setPaletteOpen(true);
+                  closeOverflow();
+                }}
+              >
+                <SearchOutlined fontSize="small" sx={{ mr: 1.25 }} />
+                {t('toolbar.commandPalette')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
                   setTemplatesOpen(true);
                   closeOverflow();
                 }}
@@ -846,6 +867,23 @@ export const App: React.FC = () => {
           open={templatesOpen}
           onClose={() => setTemplatesOpen(false)}
           onPick={loadDocument}
+        />
+
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          onOpenExport={openExport}
+          onOpenTemplates={() => setTemplatesOpen(true)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
+          onSaveFile={handleSaveFile}
+          onLoadFile={handleLoadFile}
+          safeZones={showSafeZones}
+          onToggleSafeZones={() => setShowSafeZones((p) => !p)}
+          autosaveEnabled={autosaveEnabled}
+          onToggleAutosave={toggleAutosave}
+          onClearStored={clearStoredProject}
+          language={language}
+          onSwitchLanguage={(lang) => i18n.changeLanguage(lang)}
         />
 
         <ShortcutsDialog

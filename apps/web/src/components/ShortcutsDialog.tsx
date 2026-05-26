@@ -60,6 +60,8 @@ export const ShortcutsDialog: React.FC<ShortcutsDialogProps> = ({
           { keys: [cmd, 'Z'], label: t('shortcuts.undo') },
           { keys: [cmd, '⇧', 'Z'], label: t('shortcuts.redo') },
           { keys: [cmd, 'E'], label: t('shortcuts.export') },
+          { keys: [cmd, 'K'], label: t('shortcuts.palette') },
+          { keys: [cmd, 'G'], label: t('shortcuts.templates') },
         ],
       },
     ],
