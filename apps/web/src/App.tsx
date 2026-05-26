@@ -47,6 +47,7 @@ import { ToolbarSection } from './components/ToolbarSection';
 import { AutosaveBadge } from './components/AutosaveBadge';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { isEditorDocument } from './utils/document-validation';
+import { usePullDownToClose } from './hooks/usePullDownToClose';
 
 const BUYMEACOFFEE_URL = 'https://buymeacoffee.com/dimagious';
 const PROJECT_STORAGE_KEY = 'mint-project';
@@ -99,6 +100,12 @@ export const App: React.FC = () => {
   const clipboard = useEditorStore((s) => s.clipboard);
 
   const overflowOpen = Boolean(overflowAnchor);
+
+  /* ─── Pull-down-to-dismiss gestures for the two mobile drawers ─── */
+  const layersDrawer = usePullDownToClose(() => setMobileLayersOpen(false));
+  const propertiesDrawer = usePullDownToClose(() =>
+    setMobilePropertiesOpen(false),
+  );
 
   /* ─── Keyboard shortcuts (unchanged + ? + T) ─── */
   useEffect(() => {
@@ -659,12 +666,14 @@ export const App: React.FC = () => {
                   borderTopLeftRadius: 22,
                   borderTopRightRadius: 22,
                   maxHeight: '90dvh',
+                  ...layersDrawer.paperSx,
                 },
               }}
             >
               <DrawerHeader
                 title={t('mobile.drawerTitleLayers')}
                 onClose={() => setMobileLayersOpen(false)}
+                handleProps={layersDrawer.handleProps}
               />
               <Box sx={{ overflowY: 'auto' }}>
                 <LayersPanel
@@ -684,6 +693,7 @@ export const App: React.FC = () => {
                   borderTopLeftRadius: 22,
                   borderTopRightRadius: 22,
                   maxHeight: '90dvh',
+                  ...propertiesDrawer.paperSx,
                 },
               }}
             >
@@ -698,6 +708,7 @@ export const App: React.FC = () => {
                     : t('properties.title')
                 }
                 onClose={() => setMobilePropertiesOpen(false)}
+                handleProps={propertiesDrawer.handleProps}
               />
               <Box sx={{ overflowY: 'auto' }}>
                 <PropertiesPanel mobile />
@@ -730,12 +741,36 @@ export const App: React.FC = () => {
   );
 };
 
-const DrawerHeader: React.FC<{ title: string; onClose: () => void }> = ({
+interface DrawerHeaderProps {
+  title: string;
+  onClose: () => void;
+  /** Touch handlers from `usePullDownToClose`; applied to the grab area. */
+  handleProps?: {
+    onTouchStart: (e: React.TouchEvent) => void;
+    onTouchMove: (e: React.TouchEvent) => void;
+    onTouchEnd: (e: React.TouchEvent) => void;
+    style: React.CSSProperties;
+  };
+}
+
+const DrawerHeader: React.FC<DrawerHeaderProps> = ({
   title,
   onClose,
+  handleProps,
 }) => (
   <>
-    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.25, pb: 0.5 }}>
+    {/* Pull-to-dismiss zone: a generous touch target wrapping the visible pill. */}
+    <Box
+      {...handleProps}
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        pt: 1.25,
+        pb: 0.5,
+        // Make the entire band a draggable target, not just the 40px pill.
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
       <Box
         sx={{ width: 40, height: 4, bgcolor: 'divider', borderRadius: '999px' }}
       />
